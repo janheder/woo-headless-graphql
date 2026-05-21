@@ -37,18 +37,15 @@
 *   **Cart Management:**
     *   Managed via a Svelte "Drawer" component on the frontend.
     *   Communicates with WooGraphQL mutations (`addToCart`, `updateItemQuantities`, etc.).
-*   **Cart Strategy (Reverse Proxy):**
-    *   The frontend DOES NOT implement a custom cart page form.
-    *   When the user opens the cart page, they seamlessly view the native WooCommerce cart mapped via proxy.
-    *   Because both systems share the same public domain, WooCommerce sessions and Auth cookies work natively as First-Party cookies without extra sync logic.
+*   **Cart Strategy (Headless GraphQL):**
+    *   The frontend implements the cart drawer and `/cart` page in Astro/Svelte.
+    *   Cart state is read and updated only through WooGraphQL mutations and queries.
 
 ## 5. Routing & Proxy Strategy (Astro Middleware Proxy)
 *   **Public Domain:** `janheder.space` (Single public domain for the entire user experience).
 *   **Infrastructure:** Astro frontend deployed on Cloudflare Pages using the `@astrojs/cloudflare` adapter.
 *   **Proxy Implementation:** Handled natively inside the project via Astro Middleware (`src/middleware.ts`).
 *   **Middleware Rerouting Rules:** Any incoming request matching the following paths bypasses Astro rendering and is transparently fetched from `backend.janheder.space` (preserving all headers, methods, and cookies):
-    *   `/cart` (native WooCommerce cart)
-    *   `/wp-admin`, `/wp-login.php` (WordPress administration dashboard)
     *   `/wp-content/*`, `/wp-includes/*` (WordPress core assets, uploads, and media)
     *   `/wp-json/*` (WordPress REST API)
     *   `/graphql` (The WPGraphQL / WooGraphQL endpoint)

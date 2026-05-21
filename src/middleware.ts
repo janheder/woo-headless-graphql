@@ -1,7 +1,6 @@
 import { defineMiddleware } from "astro:middleware";
 
 const WORDPRESS_BACKEND_HOST = "backend.janheder.space";
-
 /**
  * List of paths that should bypass the Astro frontend and 
  * be proxied directly to the WordPress/WooCommerce backend.
@@ -10,7 +9,6 @@ const WORDPRESS_BACKEND_HOST = "backend.janheder.space";
  * to keep the WordPress dashboard secured strictly under the backend subdomain.
  */
 const WORDPRESS_PROXY_PATHS: string[] = [
-  "/cart",        // Native WooCommerce cart
   "/wp-content",  // Theme, Plugin, and Uploaded media assets
   "/wp-includes", // Core WordPress frontend shared core assets
   "/wp-json",     // WordPress REST API
@@ -32,7 +30,26 @@ function getSetCookieHeaders(headers: Headers) {
   return header ? splitSetCookieHeader(header) : [];
 }
 
-function createPublicProxyResponse(response: Response, publicUrl: URL) {
+function shouldRewriteResponseBody(headers: Headers) {
+  const contentType = headers.get("content-type") || "";
+  return [
+    "text/html",
+    "text/css",
+    "application/javascript",
+    "text/javascript",
+    "application/json",
+  ].some((type) => contentType.includes(type));
+}
+
+function rewriteBackendUrls(content: string, publicUrl: URL) {
+  return content
+    .replaceAll(`https://${WORDPRESS_BACKEND_HOST}`, publicUrl.origin)
+    .replaceAll(`http://${WORDPRESS_BACKEND_HOST}`, publicUrl.origin)
+    .replaceAll(`https:\\/\\/${WORDPRESS_BACKEND_HOST}`, publicUrl.origin.replaceAll("/", "\\/"))
+    .replaceAll(`http:\\/\\/${WORDPRESS_BACKEND_HOST}`, publicUrl.origin.replaceAll("/", "\\/"));
+}
+
+async function createPublicProxyResponse(response: Response, publicUrl: URL) {
   const headers = new Headers(response.headers);
   const setCookieHeaders = getSetCookieHeaders(response.headers);
   const location = headers.get("location");
@@ -49,8 +66,18 @@ function createPublicProxyResponse(response: Response, publicUrl: URL) {
   if (location) {
     headers.set(
       "location",
-      location.replaceAll(`https://${WORDPRESS_BACKEND_HOST}`, publicUrl.origin)
+      rewriteBackendUrls(location, publicUrl)
     );
+  }
+
+  if (shouldRewriteResponseBody(headers)) {
+    headers.delete("content-length");
+
+    return new Response(rewriteBackendUrls(await response.text(), publicUrl), {
+      status: response.status,
+      statusText: response.statusText,
+      headers,
+    });
   }
 
   return new Response(response.body, {
@@ -97,7 +124,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
     try {
       // Securely fetch the live streaming asset or document from the Cloudways node
       const response = await fetch(proxiedRequest);
-      return createPublicProxyResponse(response, url);
+      return await createPublicProxyResponse(response, url);
     } catch (error) {
       console.error(`[Proxy Error] Failed to transparently route request to WordPress origin:`, error);
       return new Response("Backend ecommerce engine is temporarily unavailable.", { status: 502 });

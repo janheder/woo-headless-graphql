@@ -1,0 +1,11 @@
+---
+import Layout from '../layouts/Layout.astro';
+import CartPage from '../components/CartPage.svelte';
+---
+
+<Layout
+  title="Košík | Headless WooCommerce"
+  description="Nákupní košík"
+>
+  <CartPage client:load />
+</Layout>

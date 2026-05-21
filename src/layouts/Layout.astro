@@ -79,16 +79,14 @@ const {
 
     <script>
       import { cart } from '../stores/cart.svelte';
-      import { prepareNativeCartSession } from '../lib/wp-client';
 
       // Set up the window.cart bridge for external/AJAX add to cart buttons
       (window as any).cart = cart;
 
       // Global event listener for .ajax-add-to-cart clicks as requested in specs.md section 10.
-      document.addEventListener('click', async (event) => {
+      document.addEventListener('click', (event) => {
         const target = event.target as HTMLElement;
         const addToCartButton = target.closest('.ajax-add-to-cart');
-        const cartLink = target.closest('a[href="/cart"]') as HTMLAnchorElement | null;
         
         if (addToCartButton) {
           event.preventDefault();
@@ -97,12 +95,6 @@ const {
             console.log(`Add to cart clicked for product ID: ${productId}`);
             cart.addToCart(productId);
           }
-        }
-
-        if (cartLink && !event.defaultPrevented) {
-          event.preventDefault();
-          await prepareNativeCartSession('/cart');
-          window.location.href = cartLink.href;
         }
       });
     </script>

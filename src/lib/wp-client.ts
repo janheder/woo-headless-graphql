@@ -14,25 +14,11 @@ function getWooSessionToken() {
   return token ? normalizeWooSessionToken(token) : null;
 }
 
-export async function prepareNativeCartSession(path = '/cart') {
-  if (isServer) return;
-
-  const wooSession = getWooSessionToken();
-
-  if (!wooSession) return;
-
-  await fetch(path, {
-    credentials: 'include',
-    headers: {
-      'woocommerce-session': `Session ${wooSession}`,
-    },
-  });
-}
-
 export function saveWooSessionToken(token: string | null | undefined) {
   if (isServer || !token) return;
 
-  window.localStorage.setItem(wooSessionStorageKey, normalizeWooSessionToken(token));
+  const normalizedToken = normalizeWooSessionToken(token);
+  window.localStorage.setItem(wooSessionStorageKey, normalizedToken);
 }
 
 function clearWooSessionToken() {
