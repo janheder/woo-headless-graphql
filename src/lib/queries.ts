@@ -52,6 +52,7 @@ export const TERM_SEO_FRAGMENT = `
  */
 export const PRODUCT_FRAGMENT = `
   fragment ProductFields on Product {
+    __typename
     id
     databaseId
     name

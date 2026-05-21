@@ -16,6 +16,7 @@ const hasSale = product.onSale && product.regularPrice && product.salePrice;
 const cleanPrice = formatPrice(product.price);
 const cleanRegularPrice = formatPrice(product.regularPrice);
 const cleanSalePrice = formatPrice(product.salePrice);
+const isVariableProduct = product.__typename === 'VariableProduct';
 ---
 
 <article class="product-card">
@@ -47,13 +48,23 @@ const cleanSalePrice = formatPrice(product.salePrice);
       )}
     </div>
 
-    <button 
-      class="btn btn-primary btn-full ajax-add-to-cart" 
-      data-product-id={product.databaseId}
-      aria-label={`Přidat ${product.name} do košíku`}
-    >
-      Do košíku
-    </button>
+    {isVariableProduct ? (
+      <a 
+        href={`/product/${product.slug}`}
+        class="btn btn-primary btn-full"
+        aria-label={`Vybrat možnosti produktu ${product.name}`}
+      >
+        Vybrat možnosti
+      </a>
+    ) : (
+      <button 
+        class="btn btn-primary btn-full ajax-add-to-cart" 
+        data-product-id={product.databaseId}
+        aria-label={`Přidat ${product.name} do košíku`}
+      >
+        Do košíku
+      </button>
+    )}
   </div>
 </article>
 
@@ -185,6 +196,7 @@ const cleanSalePrice = formatPrice(product.salePrice);
     cursor: pointer;
     transition: all var(--transition-fast);
     text-align: center;
+    text-decoration: none;
   }
 
   .btn-primary {

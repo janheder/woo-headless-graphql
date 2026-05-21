@@ -37,6 +37,7 @@ const hasSale = product.onSale && product.regularPrice && product.salePrice;
 const cleanPrice = formatPrice(product.price);
 const cleanRegularPrice = formatPrice(product.regularPrice);
 const cleanSalePrice = formatPrice(product.salePrice);
+const isVariableProduct = product.__typename === 'VariableProduct';
 
 // Calculate exact savings percentage for premium visual helper
 let discountPercentage = 0;
@@ -129,13 +130,19 @@ breadcrumbItems.push({ label: product.name });
 
         <!-- Actions / Add to Cart -->
         <div class="buy-section">
-          <button 
-            class="btn btn-primary btn-large ajax-add-to-cart" 
-            data-product-id={product.databaseId}
-            aria-label={`Přidat ${product.name} do košíku`}
-          >
-            Přidat do košíku
-          </button>
+          {isVariableProduct ? (
+            <p class="variation-note">
+              Tento produkt má varianty. Výběr variant zatím není v headless košíku dostupný.
+            </p>
+          ) : (
+            <button 
+              class="btn btn-primary btn-large ajax-add-to-cart" 
+              data-product-id={product.databaseId}
+              aria-label={`Přidat ${product.name} do košíku`}
+            >
+              Přidat do košíku
+            </button>
+          )}
           <span class="delivery-status">✓ Skladem – připraveno k odeslání</span>
         </div>
       </div>
@@ -359,6 +366,17 @@ breadcrumbItems.push({ label: product.name });
     font-weight: 600;
   }
 
+  .variation-note {
+    max-width: 42rem;
+    font-size: 1.5rem;
+    line-height: 1.5;
+    color: var(--color-text-muted);
+    background-color: var(--color-surface);
+    border: 0.1rem solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+  }
+
   /* Reusable button styled for details context */
   .btn {
     display: inline-flex;
@@ -372,6 +390,7 @@ breadcrumbItems.push({ label: product.name });
     cursor: pointer;
     transition: all var(--transition-fast);
     text-align: center;
+    text-decoration: none;
   }
 
   .btn-primary {

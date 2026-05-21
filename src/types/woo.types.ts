@@ -22,6 +22,7 @@ export interface Category {
  * Shared WooCommerce Product interface.
  */
 export interface Product {
+  __typename?: string;
   id: string;
   databaseId: number;
   name: string;
