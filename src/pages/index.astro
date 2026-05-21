@@ -1,0 +1,268 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+// We define mock products to test card rendering and styling in this phase.
+const mockProducts = [
+  {
+    id: '1',
+    name: 'Prémiová Káva Arabica',
+    price: '349 Kč',
+    image: 'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?auto=format&fit=crop&q=80&w=600',
+    slug: 'premiova-kava-arabica',
+    badge: 'Novinka'
+  },
+  {
+    id: '2',
+    name: 'Designový Keramický Hrnek',
+    price: '289 Kč',
+    image: 'https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?auto=format&fit=crop&q=80&w=600',
+    slug: 'designovy-keramicky-hrnek',
+    badge: 'Populární'
+  },
+  {
+    id: '3',
+    name: 'Ruční Mlýnek na Kávu',
+    price: '1 290 Kč',
+    image: 'https://images.unsplash.com/photo-1579888944880-d98341148723?auto=format&fit=crop&q=80&w=600',
+    slug: 'rucni-mlynek-na-kavu',
+    badge: 'Doprava zdarma'
+  }
+];
+---
+
+<Layout title="Headless WooCommerce | Úvod" description="Moderní headless e-shop běžící na Astro, Svelte a WooCommerce rozhraní.">
+  <section class="hero-section">
+    <div class="container hero-container">
+      <div class="hero-content">
+        <span class="hero-tag">Astro + Svelte 5 + WooGraphQL</span>
+        <h1 class="hero-title">Rychlost statického webu, síla WooCommerce.</h1>
+        <p class="hero-desc">
+          Zažijte neuvěřitelně rychlé načítání díky hybridnímu renderování Astro. Veškerý katalog je předgenerován, zatímco košík a pokladna fungují dynamicky přes WooCommerce proxy.
+        </p>
+        <div class="hero-actions">
+          <a href="#katalog" class="btn btn-primary">Prozkoumat produkty</a>
+          <a href="/kosik" class="btn btn-outline">Zobrazit košík</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="katalog" class="products-section">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">Populární produkty</h2>
+        <p class="section-subtitle">Ukázka produktů načtených a stylizovaných pomocí našeho design systému.</p>
+      </div>
+
+      <div class="product-grid">
+        {mockProducts.map(product => (
+          <article class="product-card">
+            <div class="product-image-wrapper">
+              {product.badge && <span class="product-badge">{product.badge}</span>}
+              <img src={product.image} alt={product.name} class="product-image" loading="lazy" />
+            </div>
+            <div class="product-info">
+              <h3 class="product-name">{product.name}</h3>
+              <p class="product-price">{product.price}</p>
+              <button class="btn btn-primary btn-full ajax-add-to-cart" data-product-id={product.id}>
+                Do košíku
+              </button>
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+</Layout>
+
+<style>
+  .hero-section {
+    padding: var(--spacing-xxxl) 0;
+    background: radial-gradient(circle at top right, hsl(327, 60%, 97%) 0%, var(--color-bg) 60%);
+    border-bottom: 0.1rem solid var(--color-border);
+  }
+
+  .hero-container {
+    display: flex;
+    align-items: center;
+    min-height: 40.0rem;
+  }
+
+  .hero-content {
+    max-width: 65.0rem;
+    animation: slideUp var(--transition-slow) ease-out;
+  }
+
+  .hero-tag {
+    display: inline-block;
+    padding: var(--spacing-xxs) var(--spacing-md);
+    background-color: var(--color-primary-light);
+    color: var(--color-primary);
+    border-radius: var(--radius-full);
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: var(--spacing-md);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .hero-title {
+    font-size: 4.8rem;
+    line-height: 1.15;
+    margin-bottom: var(--spacing-md);
+    letter-spacing: -0.03em;
+  }
+
+  .hero-desc {
+    font-size: 1.8rem;
+    color: var(--color-text-muted);
+    margin-bottom: var(--spacing-xl);
+  }
+
+  .hero-actions {
+    display: flex;
+    gap: var(--spacing-md);
+  }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-sm) var(--spacing-xl);
+    font-size: 1.5rem;
+    font-weight: 600;
+    border-radius: var(--radius-md);
+    transition: all var(--transition-fast);
+    text-align: center;
+  }
+
+  .btn-primary {
+    background-color: var(--color-primary);
+    color: var(--color-surface);
+  }
+
+  .btn-primary:hover {
+    background-color: var(--color-primary-hover);
+    transform: translateY(-0.2rem);
+    box-shadow: 0 0.4rem 1.2rem rgba(171, 71, 129, 0.2);
+  }
+
+  .btn-primary:active {
+    transform: translateY(0);
+  }
+
+  .btn-outline {
+    background-color: transparent;
+    color: var(--color-text);
+    border: 0.2rem solid var(--color-border);
+  }
+
+  .btn-outline:hover {
+    border-color: var(--color-text);
+    background-color: var(--color-surface-hover);
+  }
+
+  .btn-full {
+    width: 100%;
+  }
+
+  /* Products Section */
+  .products-section {
+    padding: var(--spacing-xxxl) 0;
+  }
+
+  .section-header {
+    text-align: center;
+    margin-bottom: var(--spacing-xxl);
+  }
+
+  .section-title {
+    font-size: 3.2rem;
+    margin-bottom: var(--spacing-xs);
+  }
+
+  .section-subtitle {
+    font-size: 1.6rem;
+    color: var(--color-text-muted);
+    max-width: 60.0rem;
+    margin: 0 auto;
+  }
+
+  .product-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(28.0rem, 1fr));
+    gap: var(--spacing-xl);
+  }
+
+  .product-card {
+    background-color: var(--color-surface);
+    border: 0.1rem solid var(--color-border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    transition: all var(--transition-normal);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .product-card:hover {
+    transform: translateY(-0.6rem);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--color-border-hover);
+  }
+
+  .product-image-wrapper {
+    position: relative;
+    aspect-ratio: 4/3;
+    overflow: hidden;
+    background-color: var(--color-bg);
+  }
+
+  .product-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform var(--transition-slow);
+  }
+
+  .product-card:hover .product-image {
+    transform: scale(1.05);
+  }
+
+  .product-badge {
+    position: absolute;
+    top: var(--spacing-sm);
+    left: var(--spacing-sm);
+    background-color: var(--color-secondary);
+    color: var(--color-text);
+    font-size: 1.1rem;
+    font-weight: 700;
+    padding: 0.3rem var(--spacing-sm);
+    border-radius: var(--radius-sm);
+    z-index: 10;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .product-info {
+    padding: var(--spacing-lg);
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+  }
+
+  .product-name {
+    font-size: 1.8rem;
+    font-weight: 600;
+    margin-bottom: var(--spacing-xs);
+    line-height: 1.3;
+  }
+
+  .product-price {
+    font-size: 2.0rem;
+    font-weight: 700;
+    color: var(--color-primary);
+    margin-bottom: var(--spacing-lg);
+    margin-top: auto;
+  }
+</style>

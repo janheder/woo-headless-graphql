@@ -1,0 +1,133 @@
+---
+import { ClientRouter } from 'astro:transitions';
+import LoadingIndicator from '../components/LoadingIndicator.astro';
+import '../styles/global.css';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const { title = "Headless WooCommerce", description = "Headless WooCommerce shop built with Astro and Svelte" } = Astro.props;
+---
+
+<!DOCTYPE html>
+<html lang="cs">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <ClientRouter />
+  </head>
+  <body>
+    <LoadingIndicator />
+    <header class="main-header">
+      <div class="container header-container">
+        <a href="/" class="logo">
+          <span>Woo</span>Headless
+        </a>
+        <nav class="main-nav">
+          <ul>
+            <li><a href="/">Domů</a></li>
+            <li><a href="/kosik" class="nav-cart">Košík</a></li>
+          </ul>
+        </nav>
+      </div>
+    </header>
+    
+    <main>
+      <slot />
+    </main>
+
+    <footer class="main-footer">
+      <div class="container footer-container">
+        <p>&copy; {new Date().getFullYear()} Headless WooCommerce. Všechna práva vyhrazena.</p>
+      </div>
+    </footer>
+
+    <script>
+      // Global event listener for .ajax-add-to-cart clicks as requested in specs.md section 10.
+      document.addEventListener('click', (event) => {
+        const target = event.target as HTMLElement;
+        const addToCartButton = target.closest('.ajax-add-to-cart');
+        
+        if (addToCartButton) {
+          event.preventDefault();
+          const productId = addToCartButton.getAttribute('data-product-id');
+          console.log(`Add to cart clicked for product ID: ${productId}`);
+          
+          // Svelte bridge will be connected here in Phase 4
+          const cartBridge = (window as any).cart;
+          if (cartBridge) {
+            cartBridge.addToCart(productId);
+          } else {
+            console.warn('Cart system is not initialized yet.');
+          }
+        }
+      });
+    </script>
+  </body>
+</html>
+
+<style>
+  .main-header {
+    background-color: var(--color-surface);
+    border-bottom: 0.1rem solid var(--color-border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    height: 7.0rem;
+    display: flex;
+    align-items: center;
+  }
+
+  .header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .logo {
+    font-size: 2.2rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: var(--color-text);
+  }
+
+  .logo span {
+    color: var(--color-primary);
+  }
+
+  .main-nav ul {
+    display: flex;
+    gap: var(--spacing-lg);
+  }
+
+  .main-nav a {
+    font-size: 1.5rem;
+    font-weight: 500;
+    color: var(--color-text-muted);
+  }
+
+  .main-nav a:hover {
+    color: var(--color-primary);
+  }
+
+  .main-footer {
+    background-color: var(--color-surface);
+    border-top: 0.1rem solid var(--color-border);
+    padding: var(--spacing-xl) 0;
+    margin-top: var(--spacing-xxxl);
+    text-align: center;
+    color: var(--color-text-muted);
+    font-size: 1.4rem;
+  }
+
+  /* Global transitions for links */
+  a {
+    transition: color var(--transition-fast) ease;
+  }
+</style>
