@@ -37,9 +37,9 @@
 *   **Cart Management:**
     *   Managed via a Svelte "Drawer" component on the frontend.
     *   Communicates with WooGraphQL mutations (`addToCart`, `updateItemQuantities`, etc.).
-*   **Checkout Strategy (Reverse Proxy):**
-    *   The frontend DOES NOT implement a custom checkout or cart page form.
-    *   When the user interacts with the cart or proceeds to checkout, they seamlessly view the native WooCommerce pages mapped via proxy.
+*   **Cart Strategy (Reverse Proxy):**
+    *   The frontend DOES NOT implement a custom cart page form.
+    *   When the user opens the cart page, they seamlessly view the native WooCommerce cart mapped via proxy.
     *   Because both systems share the same public domain, WooCommerce sessions and Auth cookies work natively as First-Party cookies without extra sync logic.
 
 ## 5. Routing & Proxy Strategy (Astro Middleware Proxy)
@@ -47,8 +47,7 @@
 *   **Infrastructure:** Astro frontend deployed on Cloudflare Pages using the `@astrojs/cloudflare` adapter.
 *   **Proxy Implementation:** Handled natively inside the project via Astro Middleware (`src/middleware.ts`).
 *   **Middleware Rerouting Rules:** Any incoming request matching the following paths bypasses Astro rendering and is transparently fetched from `backend.janheder.space` (preserving all headers, methods, and cookies):
-    *   `/kosik`, `/pokladna` (Czech WooCommerce cart and checkout slugs)
-    *   `/cart`, `/checkout` (English fallback slugs)
+    *   `/cart` (native WooCommerce cart)
     *   `/wp-admin`, `/wp-login.php` (WordPress administration dashboard)
     *   `/wp-content/*`, `/wp-includes/*` (WordPress core assets, uploads, and media)
     *   `/wp-json/*` (WordPress REST API)

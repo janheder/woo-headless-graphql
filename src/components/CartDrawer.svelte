@@ -207,8 +207,8 @@
           <!-- Checkout Redirect Buttons -->
           <div class="action-buttons">
             <a
-              href="/pokladna"
-              class="btn btn-primary btn-full checkout-link"
+              href="/cart"
+              class="btn btn-primary btn-full cart-link"
               disabled={cart.loading}
             >
               {#if cart.loading}

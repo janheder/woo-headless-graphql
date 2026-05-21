@@ -3,7 +3,7 @@
 </script>
 
 <a 
-  href="/kosik" 
+  href="/cart" 
   class="nav-cart-btn" 
   onclick={(e) => {
     e.preventDefault();
