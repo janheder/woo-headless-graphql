@@ -123,9 +123,9 @@
             <strong>{cart.total}</strong>
           </div>
 
-          <button class="btn btn-primary btn-full" disabled>
+          <a href="/checkout" class="btn btn-primary btn-full">
             Pokračovat k platbě
-          </button>
+          </a>
           <a href="/#katalog" class="btn btn-secondary btn-full">
             Pokračovat v nákupu
           </a>

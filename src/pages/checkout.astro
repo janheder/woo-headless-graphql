@@ -1,0 +1,11 @@
+---
+import Layout from '../layouts/Layout.astro';
+import CheckoutPage from '../components/CheckoutPage.svelte';
+---
+
+<Layout
+  title="Pokladna | Headless WooCommerce"
+  description="Dokončení objednávky"
+>
+  <CheckoutPage client:load />
+</Layout>

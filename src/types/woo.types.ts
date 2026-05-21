@@ -107,6 +107,34 @@ export interface CartData {
     nodes: CartItem[];
   };
   subtotal?: string | null;
+  shippingTotal?: string | null;
+  total?: string | null;
+}
+
+export interface ShippingRate {
+  id: string;
+  instanceId?: number | null;
+  methodId?: string | null;
+  label: string;
+  cost?: string | null;
+}
+
+export interface ShippingPackage {
+  packageDetails?: string | null;
+  rates: ShippingRate[];
+}
+
+export interface PaymentGateway {
+  id: string;
+  title: string;
+  description?: string | null;
+}
+
+export interface CheckoutCartData {
+  availableShippingMethods?: ShippingPackage[] | null;
+  chosenShippingMethods?: string[] | null;
+  subtotal?: string | null;
+  shippingTotal?: string | null;
   total?: string | null;
 }
 
@@ -123,5 +151,56 @@ export interface AddToCartResponse {
 export interface UpdateCartQuantityResponse {
   updateItemQuantities: {
     cart: CartData;
+  } | null;
+}
+
+export interface GetCheckoutDataResponse {
+  paymentGateways: {
+    nodes: PaymentGateway[];
+  };
+  cart: CheckoutCartData | null;
+}
+
+export interface UpdateShippingMethodResponse {
+  updateShippingMethod: {
+    cart: CheckoutCartData;
+  } | null;
+}
+
+export interface CustomerAddressInput {
+  firstName: string;
+  lastName: string;
+  company?: string;
+  address1: string;
+  address2?: string;
+  city: string;
+  state?: string;
+  postcode: string;
+  country: string;
+  email?: string;
+  phone?: string;
+}
+
+export interface CheckoutInput {
+  billing: CustomerAddressInput;
+  shipping: CustomerAddressInput;
+  shipToDifferentAddress?: boolean;
+  shippingMethod?: string[];
+  paymentMethod: string;
+  customerNote?: string;
+  isPaid?: boolean;
+}
+
+export interface CheckoutResponse {
+  checkout: {
+    result?: string | null;
+    redirect?: string | null;
+    order?: {
+      id: string;
+      orderId?: number | null;
+      orderNumber?: string | null;
+      status?: string | null;
+      total?: string | null;
+    } | null;
   } | null;
 }

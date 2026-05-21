@@ -257,3 +257,69 @@ export const UPDATE_CART_QUANTITY = `
     }
   }
 `;
+
+/**
+ * Query checkout options that come from WooCommerce settings and the current cart session.
+ */
+export const GET_CHECKOUT_DATA = `
+  query GetCheckoutData {
+    paymentGateways(first: 20) {
+      nodes {
+        id
+        title
+        description
+      }
+    }
+    cart {
+      availableShippingMethods {
+        packageDetails
+        rates {
+          id
+          instanceId
+          methodId
+          label
+          cost
+        }
+      }
+      chosenShippingMethods
+      subtotal
+      shippingTotal
+      total
+    }
+  }
+`;
+
+/**
+ * Select a WooCommerce shipping method for the active cart session.
+ */
+export const UPDATE_SHIPPING_METHOD = `
+  mutation UpdateShippingMethod($shippingMethods: [String]) {
+    updateShippingMethod(input: { shippingMethods: $shippingMethods }) {
+      cart {
+        chosenShippingMethods
+        shippingTotal
+        subtotal
+        total
+      }
+    }
+  }
+`;
+
+/**
+ * Submit the active WooCommerce cart through WooGraphQL checkout.
+ */
+export const CHECKOUT = `
+  mutation Checkout($input: CheckoutInput!) {
+    checkout(input: $input) {
+      result
+      redirect
+      order {
+        id
+        orderId
+        orderNumber
+        status
+        total
+      }
+    }
+  }
+`;
