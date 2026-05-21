@@ -22,6 +22,8 @@ export function rewriteSeoUrl(url: string | null | undefined): string {
 export function cleanHtml(html: string | null | undefined): string {
   if (!html) return '';
   return html
+    .replace(/&amp;nbsp;/g, ' ')
+    .replace(/&#038;nbsp;/g, ' ')
     .replace(/&nbsp;/g, ' ')
     .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
@@ -40,5 +42,5 @@ export function formatPrice(priceHtml: string | null | undefined): string {
   // Remove all HTML tags
   let clean = priceHtml.replace(/<[^>]*>/g, '');
   // Decode space entities and trim
-  return clean.replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
+  return cleanHtml(clean).replace(/\s+/g, ' ').trim();
 }

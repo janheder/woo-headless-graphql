@@ -1,5 +1,6 @@
 import { client } from '../lib/wp-client';
 import { GET_CART, ADD_TO_CART, UPDATE_CART_QUANTITY } from '../lib/queries';
+import { formatPrice } from '../lib/utils';
 import type { 
   CartData, 
   CartItem, 
@@ -43,8 +44,8 @@ class CartStore {
       return;
     }
     this.items = cartData.contents?.nodes || [];
-    this.subtotal = cartData.subtotal || '0 Kč';
-    this.total = cartData.total || '0 Kč';
+    this.subtotal = formatPrice(cartData.subtotal) || '0 Kč';
+    this.total = formatPrice(cartData.total) || '0 Kč';
     this.count = this.items.reduce((count, item) => count + item.quantity, 0);
   }
 
