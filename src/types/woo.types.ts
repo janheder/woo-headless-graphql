@@ -103,7 +103,6 @@ export interface CartItem {
 }
 
 export interface CartData {
-  sessionToken?: string | null;
   contents: {
     nodes: CartItem[];
   };
