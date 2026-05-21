@@ -181,6 +181,7 @@ export const GET_CART = `
   ${PRODUCT_FRAGMENT}
   query GetCart {
     cart {
+      sessionToken
       contents(first: 100) {
         nodes {
           key
@@ -209,6 +210,7 @@ export const ADD_TO_CART = `
   mutation AddToCart($productId: Int!, $quantity: Int = 1) {
     addToCart(input: { productId: $productId, quantity: $quantity }) {
       cart {
+        sessionToken
         contents(first: 100) {
           nodes {
             key
@@ -238,6 +240,7 @@ export const UPDATE_CART_QUANTITY = `
   mutation UpdateCartQuantity($key: ID!, $quantity: Int!) {
     updateItemQuantities(input: { items: [{ key: $key, quantity: $quantity }] }) {
       cart {
+        sessionToken
         contents(first: 100) {
           nodes {
             key

@@ -1,4 +1,4 @@
-import { client } from '../lib/wp-client';
+import { client, saveWooSessionToken } from '../lib/wp-client';
 import { GET_CART, ADD_TO_CART, UPDATE_CART_QUANTITY } from '../lib/queries';
 import type { 
   CartData, 
@@ -42,6 +42,7 @@ class CartStore {
       this.count = 0;
       return;
     }
+    saveWooSessionToken(cartData.sessionToken);
     this.items = cartData.contents?.nodes || [];
     this.subtotal = cartData.subtotal || '0 Kč';
     this.total = cartData.total || '0 Kč';
