@@ -1,0 +1,145 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import ProductCard from '../../components/ProductCard.astro';
+import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import { fetchGQL } from '../../lib/fetch-gql';
+import { GET_CATEGORIES, GET_CATEGORY_WITH_PRODUCTS } from '../../lib/queries';
+import type { GetCategoriesResponse, GetCategoryWithProductsResponse } from '../../types/woo.types';
+
+// Pre-render static paths for all categories
+export async function getStaticPaths() {
+  const data = await fetchGQL<GetCategoriesResponse>(GET_CATEGORIES, { first: 100 });
+  const categories = data?.productCategories?.nodes || [];
+  
+  return categories.map(cat => ({
+    params: { slug: cat.slug }
+  }));
+}
+
+const { slug } = Astro.params;
+
+// Fetch category details, products, and RankMath SEO metadata
+const data = await fetchGQL<GetCategoryWithProductsResponse>(GET_CATEGORY_WITH_PRODUCTS, { slug });
+
+if (!data || !data.productCategory) {
+  return Astro.redirect('/404');
+}
+
+const category = data.productCategory;
+const products = category.products?.nodes || [];
+
+// Resolve Czech pluralization helper in frontmatter to prevent JSX compilation issues
+let countText = 'produktů';
+if (products.length === 1) {
+  countText = 'produkt';
+} else if (products.length >= 2 && products.length <= 4) {
+  countText = 'produkty';
+}
+---
+
+<Layout 
+  title={`${category.name} | Headless WooCommerce`}
+  description={`Prohlédněte si produkty z kategorie ${category.name}`}
+  seo={category.seo}
+>
+  <div class="container category-page">
+    <!-- Breadcrumbs -->
+    <Breadcrumbs items={[
+      { label: 'Katalog', url: '/#katalog' },
+      { label: category.name }
+    ]} />
+
+    <!-- Category Header -->
+    <header class="category-header">
+      <h1 class="category-title">{category.name}</h1>
+      <p class="category-count">
+        Nalezeno <strong>{products.length}</strong> {countText}
+      </p>
+    </header>
+
+    <!-- Product Grid -->
+    {products.length > 0 ? (
+      <div class="product-grid">
+        {products.map(product => (
+          <ProductCard product={product} />
+        ))}
+      </div>
+    ) : (
+      <div class="empty-category">
+        <p>V této kategorii momentálně nejsou žádné produkty.</p>
+        <a href="/" class="btn btn-outline">Zpět do e-shopu</a>
+      </div>
+    )}
+  </div>
+</Layout>
+
+<style>
+  .category-page {
+    padding: var(--spacing-md) 0 var(--spacing-xxl) 0;
+  }
+
+  .category-header {
+    margin-bottom: var(--spacing-xl);
+    border-bottom: 0.1rem solid var(--color-border);
+    padding-bottom: var(--spacing-md);
+    animation: fadeIn var(--transition-normal) ease-out;
+  }
+
+  .category-title {
+    font-size: 3.6rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: var(--spacing-xs);
+  }
+
+  .category-count {
+    font-size: 1.5rem;
+    color: var(--color-text-muted);
+  }
+
+  /* Product Grid */
+  .product-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(28.0rem, 1fr));
+    gap: var(--spacing-xl);
+    animation: fadeIn var(--transition-normal) ease-out;
+  }
+
+  /* Empty Category State */
+  .empty-category {
+    text-align: center;
+    padding: var(--spacing-xxl) var(--spacing-lg);
+    background-color: var(--color-surface);
+    border: 0.1rem solid var(--color-border);
+    border-radius: var(--radius-lg);
+    animation: fadeIn var(--transition-normal) ease-out;
+  }
+
+  .empty-category p {
+    font-size: 1.8rem;
+    color: var(--color-text-muted);
+    margin-bottom: var(--spacing-lg);
+  }
+
+  /* Reusable button styling in empty state context */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-sm) var(--spacing-xl);
+    font-size: 1.5rem;
+    font-weight: 600;
+    border-radius: var(--radius-md);
+    border: 0.2rem solid var(--color-border);
+    background-color: transparent;
+    color: var(--color-text);
+    cursor: pointer;
+    text-decoration: none;
+    transition: all var(--transition-fast);
+  }
+
+  .btn-outline:hover {
+    border-color: var(--color-text);
+    background-color: var(--color-surface-hover);
+  }
+</style>

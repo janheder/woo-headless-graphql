@@ -1,0 +1,439 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import { fetchGQL } from '../../lib/fetch-gql';
+import { GET_PRODUCTS, GET_PRODUCT_BY_SLUG } from '../../lib/queries';
+import type { GetProductsResponse, GetProductBySlugResponse } from '../../types/woo.types';
+import { formatPrice, rewriteAssetUrl } from '../../lib/utils';
+
+// Pre-render static paths for all products
+export async function getStaticPaths() {
+  const data = await fetchGQL<GetProductsResponse>(GET_PRODUCTS, { first: 100 });
+  const products = data?.products?.nodes || [];
+  
+  return products.map(prod => ({
+    params: { slug: prod.slug }
+  }));
+}
+
+const { slug } = Astro.params;
+
+// Fetch full details of the product including galleries and SEO
+const data = await fetchGQL<GetProductBySlugResponse>(GET_PRODUCT_BY_SLUG, { slug });
+
+if (!data || !data.product) {
+  return Astro.redirect('/404');
+}
+
+const product = data.product;
+
+const mainImageSrc = product.image?.sourceUrl 
+  ? rewriteAssetUrl(product.image.sourceUrl) 
+  : 'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?auto=format&fit=crop&q=80&w=600';
+
+const galleryImages = product.galleryImages?.nodes || [];
+
+const hasSale = product.onSale && product.regularPrice && product.salePrice;
+const cleanPrice = formatPrice(product.price);
+const cleanRegularPrice = formatPrice(product.regularPrice);
+const cleanSalePrice = formatPrice(product.salePrice);
+
+// Calculate exact savings percentage for premium visual helper
+let discountPercentage = 0;
+if (hasSale) {
+  const regNum = parseInt(cleanRegularPrice.replace(/[^0-9]/g, ''), 10) || 0;
+  const saleNum = parseInt(cleanSalePrice.replace(/[^0-9]/g, ''), 10) || 0;
+  if (regNum > 0 && saleNum < regNum) {
+    discountPercentage = Math.round(((regNum - saleNum) / regNum) * 100);
+  }
+}
+
+// Build breadcrumb history trail
+const firstCategory = product.productCategories?.nodes?.[0];
+const breadcrumbItems: { label: string; url?: string }[] = [{ label: 'Katalog', url: '/#katalog' }];
+if (firstCategory) {
+  breadcrumbItems.push({ label: firstCategory.name, url: `/category/${firstCategory.slug}` });
+}
+breadcrumbItems.push({ label: product.name });
+---
+
+<Layout 
+  title={`${product.name} | Headless WooCommerce`}
+  description={product.shortDescription ? product.shortDescription.replace(/<[^>]*>/g, '').slice(0, 155) : `Detail produktu ${product.name}`}
+  seo={product.seo}
+>
+  <article class="container product-page">
+    <!-- Breadcrumbs -->
+    <Breadcrumbs items={breadcrumbItems} />
+
+    <div class="product-grid">
+      <!-- Media Gallery Column -->
+      <div class="product-media">
+        <div class="main-image-card">
+          {product.onSale && (
+            <span class="sale-badge">
+              Sleva {discountPercentage > 0 ? `${discountPercentage}%` : ''}
+            </span>
+          )}
+          <img 
+            src={mainImageSrc} 
+            alt={product.image?.altText || product.name} 
+            class="main-product-image"
+          />
+        </div>
+
+        {galleryImages.length > 0 && (
+          <div class="gallery-grid">
+            <div class="gallery-thumb active">
+              <img src={mainImageSrc} alt="Náhled hlavní" />
+            </div>
+            {galleryImages.map((img, idx) => (
+              <div class="gallery-thumb">
+                <img src={rewriteAssetUrl(img.sourceUrl)} alt={`Náhled galerie ${idx + 1}`} />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <!-- Details Column -->
+      <div class="product-details">
+        <header class="details-header">
+          {firstCategory && (
+            <a href={`/category/${firstCategory.slug}`} class="category-link">
+              {firstCategory.name}
+            </a>
+          )}
+          <h1 class="product-title">{product.name}</h1>
+        </header>
+
+        <!-- Pricing Section -->
+        <div class="price-box">
+          {hasSale ? (
+            <div class="price-wrapper">
+              <span class="price-old">{cleanRegularPrice}</span>
+              <span class="price-new price-discounted">{cleanSalePrice}</span>
+              {discountPercentage > 0 && (
+                <span class="savings-amount">Ušetříte {discountPercentage}%</span>
+              )}
+            </div>
+          ) : (
+            <span class="price-new">{cleanPrice}</span>
+          )}
+        </div>
+
+        <!-- Short Description -->
+        {product.shortDescription && (
+          <div class="short-description" set:html={product.shortDescription} />
+        )}
+
+        <!-- Actions / Add to Cart -->
+        <div class="buy-section">
+          <button 
+            class="btn btn-primary btn-large ajax-add-to-cart" 
+            data-product-id={product.databaseId}
+            aria-label={`Přidat ${product.name} do košíku`}
+          >
+            Přidat do košíku
+          </button>
+          <span class="delivery-status">✓ Skladem – připraveno k odeslání</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Full Rich HTML Description -->
+    {product.description && (
+      <section class="description-section">
+        <h2 class="description-heading">Podrobné informace o produktu</h2>
+        <div class="full-description" set:html={product.description} />
+      </section>
+    )}
+  </article>
+</Layout>
+
+<script>
+  // Simple client-side thumbnail image switcher
+  const thumbs = document.querySelectorAll('.gallery-thumb');
+  const mainImg = document.querySelector('.main-product-image') as HTMLImageElement;
+
+  thumbs.forEach(thumb => {
+    thumb.addEventListener('click', () => {
+      // Remove active states
+      thumbs.forEach(t => t.classList.remove('active'));
+      thumb.classList.add('active');
+
+      const newSrc = thumb.querySelector('img')?.getAttribute('src');
+      if (newSrc && mainImg) {
+        mainImg.src = newSrc;
+      }
+    });
+  });
+</script>
+
+<style>
+  .product-page {
+    padding: var(--spacing-md) 0 var(--spacing-xxl) 0;
+  }
+
+  .product-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--spacing-xxl);
+    margin-top: var(--spacing-md);
+  }
+
+  @media (min-width: 768px) {
+    .product-grid {
+      grid-template-columns: 1.1fr 0.9fr;
+    }
+  }
+
+  /* Media Gallery Style */
+  .product-media {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    animation: fadeIn var(--transition-normal) ease-out;
+  }
+
+  .main-image-card {
+    position: relative;
+    border: 0.1rem solid var(--color-border);
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    background-color: var(--color-surface);
+    aspect-ratio: 4/3;
+  }
+
+  .main-product-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .sale-badge {
+    position: absolute;
+    top: var(--spacing-md);
+    left: var(--spacing-md);
+    background-color: var(--color-primary);
+    color: var(--color-surface);
+    font-size: 1.3rem;
+    font-weight: 700;
+    padding: 0.5rem var(--spacing-md);
+    border-radius: var(--radius-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    box-shadow: var(--shadow-md);
+  }
+
+  .gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: var(--spacing-sm);
+  }
+
+  .gallery-thumb {
+    border: 0.1rem solid var(--color-border);
+    border-radius: var(--radius-md);
+    aspect-ratio: 1;
+    overflow: hidden;
+    cursor: pointer;
+    background-color: var(--color-surface);
+    transition: all var(--transition-fast);
+  }
+
+  .gallery-thumb:hover {
+    border-color: var(--color-border-hover);
+    transform: translateY(-0.2rem);
+  }
+
+  .gallery-thumb.active {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 0.2rem var(--color-primary-light);
+  }
+
+  .gallery-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* Details Column Style */
+  .product-details {
+    display: flex;
+    flex-direction: column;
+    animation: fadeIn var(--transition-normal) ease-out;
+  }
+
+  .details-header {
+    margin-bottom: var(--spacing-md);
+  }
+
+  .category-link {
+    font-size: 1.4rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-primary);
+    text-decoration: none;
+    display: inline-block;
+    margin-bottom: var(--spacing-xs);
+  }
+
+  .product-title {
+    font-size: 3.6rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.2;
+    color: var(--color-text);
+  }
+
+  /* Price styling */
+  .price-box {
+    margin-bottom: var(--spacing-lg);
+    background-color: var(--color-surface);
+    border: 0.1rem solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+    display: inline-flex;
+    align-self: flex-start;
+  }
+
+  .price-wrapper {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    flex-wrap: wrap;
+  }
+
+  .price-new {
+    font-size: 2.8rem;
+    font-weight: 800;
+    color: var(--color-text);
+  }
+
+  .price-discounted {
+    color: var(--color-primary);
+  }
+
+  .price-old {
+    font-size: 1.8rem;
+    color: var(--color-text-muted);
+    text-decoration: line-through;
+    font-weight: 500;
+  }
+
+  .savings-amount {
+    font-size: 1.2rem;
+    font-weight: 700;
+    background-color: var(--color-primary-light);
+    color: var(--color-primary);
+    padding: 0.3rem var(--spacing-sm);
+    border-radius: var(--radius-full);
+    text-transform: uppercase;
+  }
+
+  /* Short Description */
+  .short-description {
+    font-size: 1.6rem;
+    color: var(--color-text-muted);
+    line-height: 1.6;
+    margin-bottom: var(--spacing-xl);
+  }
+
+  .short-description :global(p) {
+    margin-bottom: var(--spacing-xs);
+  }
+
+  /* Buy Actions */
+  .buy-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-xxl);
+  }
+
+  .delivery-status {
+    font-size: 1.4rem;
+    color: var(--color-success);
+    font-weight: 600;
+  }
+
+  /* Reusable button styled for details context */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-sm) var(--spacing-xl);
+    font-size: 1.5rem;
+    font-weight: 600;
+    border-radius: var(--radius-md);
+    border: none;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    text-align: center;
+  }
+
+  .btn-primary {
+    background-color: var(--color-primary);
+    color: var(--color-surface);
+  }
+
+  .btn-primary:hover {
+    background-color: var(--color-primary-hover);
+    transform: translateY(-0.2rem);
+    box-shadow: 0 0.4rem 1.2rem rgba(171, 71, 129, 0.2);
+  }
+
+  .btn-primary:active {
+    transform: translateY(0);
+  }
+
+  .btn-large {
+    padding: var(--spacing-md) var(--spacing-xxl);
+    font-size: 1.8rem;
+    border-radius: var(--radius-lg);
+  }
+
+  /* Full Detailed Description Section */
+  .description-section {
+    margin-top: var(--spacing-xxl);
+    border-top: 0.1rem solid var(--color-border);
+    padding-top: var(--spacing-xxl);
+    animation: fadeIn var(--transition-normal) ease-out;
+  }
+
+  .description-heading {
+    font-size: 2.4rem;
+    font-weight: 700;
+    margin-bottom: var(--spacing-lg);
+    letter-spacing: -0.01em;
+  }
+
+  .full-description {
+    font-size: 1.6rem;
+    color: var(--color-text);
+    line-height: 1.8;
+  }
+
+  /* Sub-elements styles for GQL fetched content description block */
+  .full-description :global(p) {
+    margin-bottom: var(--spacing-md);
+  }
+
+  .full-description :global(h2),
+  .full-description :global(h3) {
+    font-size: 2.0rem;
+    font-weight: 600;
+    margin: var(--spacing-xl) 0 var(--spacing-sm) 0;
+  }
+
+  .full-description :global(ul),
+  .full-description :global(ol) {
+    margin: 0 0 var(--spacing-md) var(--spacing-lg);
+  }
+
+  .full-description :global(li) {
+    margin-bottom: var(--spacing-xxs);
+  }
+</style>

@@ -1,14 +1,21 @@
 ---
 import { ClientRouter } from 'astro:transitions';
 import LoadingIndicator from '../components/LoadingIndicator.astro';
+import type { SeoMetadata } from '../types/woo.types';
+import { rewriteSeoUrl } from '../lib/utils';
 import '../styles/global.css';
 
 interface Props {
   title?: string;
   description?: string;
+  seo?: SeoMetadata;
 }
 
-const { title = "Headless WooCommerce", description = "Headless WooCommerce shop built with Astro and Svelte" } = Astro.props;
+const { 
+  title = "Headless WooCommerce", 
+  description = "Headless WooCommerce shop built with Astro and Svelte",
+  seo 
+} = Astro.props;
 ---
 
 <!DOCTYPE html>
@@ -18,8 +25,26 @@ const { title = "Headless WooCommerce", description = "Headless WooCommerce shop
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="generator" content={Astro.generator} />
-    <title>{title}</title>
-    <meta name="description" content={description} />
+    
+    <!-- SEO Meta Tags -->
+    <title>{seo?.title || title}</title>
+    <meta name="description" content={seo?.metaDesc || description} />
+    
+    {seo?.canonical && <link rel="canonical" href={rewriteSeoUrl(seo.canonical)} />}
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={seo?.opengraphTitle || seo?.title || title} />
+    <meta property="og:description" content={seo?.opengraphDescription || seo?.metaDesc || description} />
+    {seo?.canonical && <meta property="og:url" content={rewriteSeoUrl(seo.canonical)} />}
+    {seo?.opengraphImage?.sourceUrl && <meta property="og:image" content={rewriteSeoUrl(seo.opengraphImage.sourceUrl)} />}
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:title" content={seo?.opengraphTitle || seo?.title || title} />
+    <meta property="twitter:description" content={seo?.opengraphDescription || seo?.metaDesc || description} />
+    {seo?.opengraphImage?.sourceUrl && <meta property="twitter:image" content={rewriteSeoUrl(seo.opengraphImage.sourceUrl)} />}
+
     <ClientRouter />
   </head>
   <body>

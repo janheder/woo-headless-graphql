@@ -1,0 +1,82 @@
+---
+interface Props {
+  items: {
+    label: string;
+    url?: string;
+  }[];
+}
+
+const { items } = Astro.props;
+---
+
+<nav class="breadcrumbs" aria-label="Drobečková navigace">
+  <ol class="breadcrumbs-list">
+    <li class="breadcrumbs-item">
+      <a href="/" class="breadcrumbs-link">Domů</a>
+    </li>
+    {
+      items.map((item, index) => {
+        const isLast = index === items.length - 1;
+        return (
+          <>
+            <li class="breadcrumbs-separator" aria-hidden="true">/</li>
+            <li class="breadcrumbs-item">
+              {isLast || !item.url ? (
+                <span class="breadcrumbs-current" aria-current="page">{item.label}</span>
+              ) : (
+                <a href={item.url} class="breadcrumbs-link">{item.label}</a>
+              )}
+            </li>
+          </>
+        );
+      })
+    }
+  </ol>
+</nav>
+
+<style>
+  .breadcrumbs {
+    padding: var(--spacing-md) 0;
+    margin-bottom: var(--spacing-lg);
+    animation: fadeIn var(--transition-normal) ease-out;
+  }
+
+  .breadcrumbs-list {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    font-size: 1.4rem;
+    font-weight: 500;
+    line-height: 1.4;
+  }
+
+  .breadcrumbs-item {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .breadcrumbs-link {
+    color: var(--color-text-muted);
+    text-decoration: none;
+    transition: color var(--transition-fast) ease;
+  }
+
+  .breadcrumbs-link:hover {
+    color: var(--color-primary);
+  }
+
+  .breadcrumbs-separator {
+    color: var(--color-border);
+    margin: 0 var(--spacing-xs);
+    user-select: none;
+    font-size: 1.2rem;
+  }
+
+  .breadcrumbs-current {
+    color: var(--color-text);
+    font-weight: 600;
+  }
+</style>
