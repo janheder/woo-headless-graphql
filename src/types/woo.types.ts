@@ -45,13 +45,17 @@ export interface Product {
  * RankMath SEO metadata interface fetched via GraphQL.
  */
 export interface SeoMetadata {
-  title?: string;
-  metaDesc?: string;
-  canonical?: string;
-  opengraphTitle?: string;
-  opengraphDescription?: string;
-  opengraphImage?: WooImage | null;
-  schema?: string;
+  title?: string | null;
+  description?: string | null;
+  canonicalUrl?: string | null;
+  openGraph?: {
+    title?: string | null;
+    description?: string | null;
+    image?: {
+      url: string;
+      secureUrl?: string;
+    } | null;
+  } | null;
 }
 
 /**
@@ -82,4 +86,42 @@ export interface GetCategoryWithProductsResponse {
       nodes: Product[];
     };
   };
+}
+
+/**
+ * WooCommerce Cart interfaces.
+ */
+export interface CartItem {
+  key: string;
+  product: {
+    node: Product;
+  };
+  quantity: number;
+  subtotal?: string | null;
+  total?: string | null;
+}
+
+export interface CartData {
+  contents: {
+    nodes: CartItem[];
+  };
+  subtotal?: string | null;
+  total?: string | null;
+  contentsCount: number;
+}
+
+export interface GetCartResponse {
+  cart: CartData | null;
+}
+
+export interface AddToCartResponse {
+  addToCart: {
+    cart: CartData;
+  } | null;
+}
+
+export interface UpdateCartQuantityResponse {
+  updateItemQuantities: {
+    cart: CartData;
+  } | null;
 }

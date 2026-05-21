@@ -1,6 +1,8 @@
 ---
 import { ClientRouter } from 'astro:transitions';
 import LoadingIndicator from '../components/LoadingIndicator.astro';
+import CartButton from '../components/CartButton.svelte';
+import CartDrawer from '../components/CartDrawer.svelte';
 import type { SeoMetadata } from '../types/woo.types';
 import { rewriteSeoUrl } from '../lib/utils';
 import '../styles/global.css';
@@ -28,22 +30,22 @@ const {
     
     <!-- SEO Meta Tags -->
     <title>{seo?.title || title}</title>
-    <meta name="description" content={seo?.metaDesc || description} />
+    <meta name="description" content={seo?.description || description} />
     
-    {seo?.canonical && <link rel="canonical" href={rewriteSeoUrl(seo.canonical)} />}
+    {seo?.canonicalUrl && <link rel="canonical" href={rewriteSeoUrl(seo.canonicalUrl)} />}
     
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
-    <meta property="og:title" content={seo?.opengraphTitle || seo?.title || title} />
-    <meta property="og:description" content={seo?.opengraphDescription || seo?.metaDesc || description} />
-    {seo?.canonical && <meta property="og:url" content={rewriteSeoUrl(seo.canonical)} />}
-    {seo?.opengraphImage?.sourceUrl && <meta property="og:image" content={rewriteSeoUrl(seo.opengraphImage.sourceUrl)} />}
+    <meta property="og:title" content={seo?.openGraph?.title || seo?.title || title} />
+    <meta property="og:description" content={seo?.openGraph?.description || seo?.description || description} />
+    {seo?.canonicalUrl && <meta property="og:url" content={rewriteSeoUrl(seo.canonicalUrl)} />}
+    {seo?.openGraph?.image?.url && <meta property="og:image" content={rewriteSeoUrl(seo.openGraph.image.url)} />}
     
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image" />
-    <meta property="twitter:title" content={seo?.opengraphTitle || seo?.title || title} />
-    <meta property="twitter:description" content={seo?.opengraphDescription || seo?.metaDesc || description} />
-    {seo?.opengraphImage?.sourceUrl && <meta property="twitter:image" content={rewriteSeoUrl(seo.opengraphImage.sourceUrl)} />}
+    <meta property="twitter:title" content={seo?.openGraph?.title || seo?.title || title} />
+    <meta property="twitter:description" content={seo?.openGraph?.description || seo?.description || description} />
+    {seo?.openGraph?.image?.url && <meta property="twitter:image" content={rewriteSeoUrl(seo.openGraph.image.url)} />}
 
     <ClientRouter />
   </head>
@@ -57,7 +59,7 @@ const {
         <nav class="main-nav">
           <ul>
             <li><a href="/">Domů</a></li>
-            <li><a href="/kosik" class="nav-cart">Košík</a></li>
+            <li><CartButton client:load /></li>
           </ul>
         </nav>
       </div>
@@ -73,7 +75,14 @@ const {
       </div>
     </footer>
 
+    <CartDrawer client:load />
+
     <script>
+      import { cart } from '../stores/cart.svelte';
+
+      // Set up the window.cart bridge for external/AJAX add to cart buttons
+      (window as any).cart = cart;
+
       // Global event listener for .ajax-add-to-cart clicks as requested in specs.md section 10.
       document.addEventListener('click', (event) => {
         const target = event.target as HTMLElement;
@@ -82,14 +91,9 @@ const {
         if (addToCartButton) {
           event.preventDefault();
           const productId = addToCartButton.getAttribute('data-product-id');
-          console.log(`Add to cart clicked for product ID: ${productId}`);
-          
-          // Svelte bridge will be connected here in Phase 4
-          const cartBridge = (window as any).cart;
-          if (cartBridge) {
-            cartBridge.addToCart(productId);
-          } else {
-            console.warn('Cart system is not initialized yet.');
+          if (productId) {
+            console.log(`Add to cart clicked for product ID: ${productId}`);
+            cart.addToCart(productId);
           }
         }
       });

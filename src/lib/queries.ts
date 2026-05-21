@@ -12,14 +12,17 @@ export const IMAGE_FRAGMENT = `
  * GraphQL Fragment for RankMath SEO on PostTypes (Products).
  */
 export const SEO_FRAGMENT = `
-  fragment SeoFields on PostTypeSEO {
+  fragment SeoFields on RankMathProductObjectSeo {
     title
-    metaDesc
-    canonical
-    opengraphTitle
-    opengraphDescription
-    opengraphImage {
-      sourceUrl
+    description
+    canonicalUrl
+    openGraph {
+      title
+      description
+      image {
+        url
+        secureUrl
+      }
     }
   }
 `;
@@ -28,14 +31,17 @@ export const SEO_FRAGMENT = `
  * GraphQL Fragment for RankMath SEO on Terms (Categories).
  */
 export const TERM_SEO_FRAGMENT = `
-  fragment TermSeoFields on TermNodeSEO {
+  fragment TermSeoFields on RankMathProductCategoryTermSeo {
     title
-    metaDesc
-    canonical
-    opengraphTitle
-    opengraphDescription
-    opengraphImage {
-      sourceUrl
+    description
+    canonicalUrl
+    openGraph {
+      title
+      description
+      image {
+        url
+        secureUrl
+      }
     }
   }
 `;
@@ -45,7 +51,6 @@ export const TERM_SEO_FRAGMENT = `
  * Extends fields specifically for simple and variable products to get price states.
  */
 export const PRODUCT_FRAGMENT = `
-  ${IMAGE_FRAGMENT}
   fragment ProductFields on Product {
     id
     databaseId
@@ -73,7 +78,6 @@ export const PRODUCT_FRAGMENT = `
  * GraphQL Fragment for WooCommerce Product Category fields.
  */
 export const CATEGORY_FRAGMENT = `
-  ${IMAGE_FRAGMENT}
   fragment CategoryFields on ProductCategory {
     id
     databaseId
@@ -90,6 +94,7 @@ export const CATEGORY_FRAGMENT = `
  * Query to fetch a list of products.
  */
 export const GET_PRODUCTS = `
+  ${IMAGE_FRAGMENT}
   ${PRODUCT_FRAGMENT}
   query GetProducts($first: Int = 12) {
     products(first: $first) {
@@ -104,6 +109,7 @@ export const GET_PRODUCTS = `
  * Query to fetch a list of product categories.
  */
 export const GET_CATEGORIES = `
+  ${IMAGE_FRAGMENT}
   ${CATEGORY_FRAGMENT}
   query GetCategories($first: Int = 20) {
     productCategories(first: $first, where: { hideEmpty: true }) {
@@ -114,10 +120,8 @@ export const GET_CATEGORIES = `
   }
 `;
 
-/**
- * Query to fetch a single product details by its slug, including gallery and SEO metadata.
- */
 export const GET_PRODUCT_BY_SLUG = `
+  ${IMAGE_FRAGMENT}
   ${PRODUCT_FRAGMENT}
   ${SEO_FRAGMENT}
   query GetProductBySlug($slug: ID!) {
@@ -149,20 +153,110 @@ export const GET_PRODUCT_BY_SLUG = `
  * Query to fetch a single category with its products by its slug, including category term SEO metadata.
  */
 export const GET_CATEGORY_WITH_PRODUCTS = `
+  ${IMAGE_FRAGMENT}
   ${PRODUCT_FRAGMENT}
   ${CATEGORY_FRAGMENT}
   ${TERM_SEO_FRAGMENT}
   query GetCategoryWithProducts($slug: ID!) {
     productCategory(id: $slug, idType: SLUG) {
       ...CategoryFields
-      seo {
-        ...TermSeoFields
-      }
       products(first: 50) {
         nodes {
           ...ProductFields
         }
       }
+      seo {
+        ...TermSeoFields
+      }
     }
   }
 `;
+
+/**
+ * Query to fetch the WooCommerce cart state.
+ */
+export const GET_CART = `
+  ${IMAGE_FRAGMENT}
+  ${PRODUCT_FRAGMENT}
+  query GetCart {
+    cart {
+      contents(first: 100) {
+        nodes {
+          key
+          product {
+            node {
+              ...ProductFields
+            }
+          }
+          quantity
+          subtotal
+          total
+        }
+      }
+      subtotal
+      total
+      contentsCount
+    }
+  }
+`;
+
+/**
+ * Mutation to add a product to the WooCommerce cart.
+ */
+export const ADD_TO_CART = `
+  ${IMAGE_FRAGMENT}
+  ${PRODUCT_FRAGMENT}
+  mutation AddToCart($productId: Int!, $quantity: Int = 1) {
+    addToCart(input: { productId: $productId, quantity: $quantity }) {
+      cart {
+        contents(first: 100) {
+          nodes {
+            key
+            product {
+              node {
+                ...ProductFields
+              }
+            }
+            quantity
+            subtotal
+            total
+          }
+        }
+        subtotal
+        total
+        contentsCount
+      }
+    }
+  }
+`;
+
+/**
+ * Mutation to update a WooCommerce cart item quantity.
+ */
+export const UPDATE_CART_QUANTITY = `
+  ${IMAGE_FRAGMENT}
+  ${PRODUCT_FRAGMENT}
+  mutation UpdateCartQuantity($key: ID!, $quantity: Int!) {
+    updateItemQuantities(input: { items: [{ key: $key, quantity: $quantity }] }) {
+      cart {
+        contents(first: 100) {
+          nodes {
+            key
+            product {
+              node {
+                ...ProductFields
+              }
+            }
+            quantity
+            subtotal
+            total
+          }
+        }
+        subtotal
+        total
+        contentsCount
+      }
+    }
+  }
+`;
+
