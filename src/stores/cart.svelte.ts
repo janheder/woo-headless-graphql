@@ -45,7 +45,7 @@ class CartStore {
     this.items = cartData.contents?.nodes || [];
     this.subtotal = cartData.subtotal || '0 Kč';
     this.total = cartData.total || '0 Kč';
-    this.count = cartData.contentsCount || 0;
+    this.count = this.items.reduce((count, item) => count + item.quantity, 0);
   }
 
   // Toggle drawer visibility state

@@ -195,7 +195,6 @@ export const GET_CART = `
       }
       subtotal
       total
-      contentsCount
     }
   }
 `;
@@ -224,7 +223,6 @@ export const ADD_TO_CART = `
         }
         subtotal
         total
-        contentsCount
       }
     }
   }
@@ -254,9 +252,7 @@ export const UPDATE_CART_QUANTITY = `
         }
         subtotal
         total
-        contentsCount
       }
     }
   }
 `;
-

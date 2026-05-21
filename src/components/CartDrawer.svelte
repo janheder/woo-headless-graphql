@@ -1,17 +1,17 @@
 <script lang="ts">
-  import { cart } from '../stores/cart.svelte';
-  import { rewriteAssetUrl, formatPrice } from '../lib/utils';
-  import { fade, slide } from 'svelte/transition';
+  import { cart } from "../stores/cart.svelte";
+  import { rewriteAssetUrl, formatPrice } from "../lib/utils";
+  import { fade, slide } from "svelte/transition";
 
   // Svelte 5 effect to manage page scroll lock when drawer is active
   $effect(() => {
     if (cart.isOpen) {
-      document.body.style.overflow = 'hidden';
+      document.body.style.overflow = "hidden";
     } else {
-      document.body.style.overflow = '';
+      document.body.style.overflow = "";
     }
     return () => {
-      document.body.style.overflow = '';
+      document.body.style.overflow = "";
     };
   });
 
@@ -40,16 +40,17 @@
 
 {#if cart.isOpen}
   <!-- Cart Backdrop with fade-in effect -->
-  <div 
-    class="cart-backdrop" 
+  <div
+    class="cart-backdrop"
     onclick={handleBackdropClick}
     transition:fade={{ duration: 250 }}
     role="presentation"
   >
     <!-- Cart Sliding Panel -->
-    <aside 
-      class="cart-panel" 
-      transition:slide={{ axis: 'x', duration: 300 }}
+    <!-- svelte-ignore a11y_no_noninteractive_element_to_interactive_role -->
+    <aside
+      class="cart-panel"
+      transition:slide={{ axis: "x", duration: 300 }}
       role="dialog"
       aria-modal="true"
       aria-label="Nákupní košík"
@@ -59,9 +60,9 @@
         <h2 class="cart-title">
           Košík <span class="item-count-badge">{cart.count}</span>
         </h2>
-        <button 
-          class="close-button" 
-          onclick={() => cart.toggleDrawer(false)} 
+        <button
+          class="close-button"
+          onclick={() => cart.toggleDrawer(false)}
           aria-label="Zavřít košík"
         >
           &times;
@@ -87,8 +88,8 @@
             <div class="empty-icon">🛒</div>
             <h3>Váš košík je prázdný</h3>
             <p>Vyberte si z naší nabídky produktů a naplňte svůj košík.</p>
-            <button 
-              class="btn btn-primary" 
+            <button
+              class="btn btn-primary"
               onclick={() => cart.toggleDrawer(false)}
             >
               Pokračovat v nákupu
@@ -101,9 +102,10 @@
                 <!-- Product Image -->
                 <div class="item-image-wrapper">
                   {#if item.product.node.image?.sourceUrl}
-                    <img 
-                      src={rewriteAssetUrl(item.product.node.image.sourceUrl)} 
-                      alt={item.product.node.image.altText || item.product.node.name} 
+                    <img
+                      src={rewriteAssetUrl(item.product.node.image.sourceUrl)}
+                      alt={item.product.node.image.altText ||
+                        item.product.node.name}
                       class="item-image"
                     />
                   {:else}
@@ -114,23 +116,42 @@
                 <!-- Product Details -->
                 <div class="item-info">
                   <div class="item-header">
-                    <a href={`/product/${item.product.node.slug}`} class="item-name" onclick={() => cart.toggleDrawer(false)}>
+                    <a
+                      href={`/product/${item.product.node.slug}`}
+                      class="item-name"
+                      onclick={() => cart.toggleDrawer(false)}
+                    >
                       {item.product.node.name}
                     </a>
-                    <button 
-                      class="remove-button" 
+                    <button
+                      class="remove-button"
                       onclick={() => removeItem(item.key)}
                       aria-label="Odstranit položku"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        ><polyline points="3 6 5 6 21 6"></polyline><path
+                          d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                        ></path><line x1="10" y1="11" x2="10" y2="17"
+                        ></line><line x1="14" y1="11" x2="14" y2="17"
+                        ></line></svg
+                      >
                     </button>
                   </div>
 
                   <!-- Price and Quantity Controls -->
                   <div class="item-controls-price">
                     <div class="qty-controller">
-                      <button 
-                        class="qty-btn" 
+                      <button
+                        class="qty-btn"
                         onclick={() => decrementItem(item.key, item.quantity)}
                         disabled={cart.loading}
                         aria-label="Snížit množství"
@@ -138,8 +159,8 @@
                         -
                       </button>
                       <span class="qty-value">{item.quantity}</span>
-                      <button 
-                        class="qty-btn" 
+                      <button
+                        class="qty-btn"
                         onclick={() => incrementItem(item.key, item.quantity)}
                         disabled={cart.loading}
                         aria-label="Zvýšit množství"
@@ -151,9 +172,13 @@
                     <!-- Price Box (Single and Subtotal) -->
                     <div class="price-display">
                       {#if item.product.node.onSale && item.product.node.regularPrice}
-                        <span class="price-old">{formatPrice(item.product.node.regularPrice)}</span>
+                        <span class="price-old"
+                          >{formatPrice(item.product.node.regularPrice)}</span
+                        >
                       {/if}
-                      <span class="price-current">{formatPrice(item.product.node.price)}</span>
+                      <span class="price-current"
+                        >{formatPrice(item.product.node.price)}</span
+                      >
                     </div>
                   </div>
                 </div>
@@ -181,8 +206,8 @@
 
           <!-- Checkout Redirect Buttons -->
           <div class="action-buttons">
-            <a 
-              href="/pokladna" 
+            <a
+              href="/pokladna"
               class="btn btn-primary btn-full checkout-link"
               disabled={cart.loading}
             >
@@ -192,7 +217,7 @@
                 Přejít k pokladně
               {/if}
             </a>
-            <button 
+            <button
               class="btn btn-secondary btn-full continue-shopping"
               onclick={() => cart.toggleDrawer(false)}
             >
@@ -229,7 +254,7 @@
 
   .cart-panel {
     width: 100%;
-    max-width: 48.0rem;
+    max-width: 48rem;
     height: 100%;
     background-color: var(--color-surface);
     box-shadow: var(--shadow-xl);
@@ -241,7 +266,7 @@
 
   /* Header Styles */
   .cart-header {
-    height: 7.0rem;
+    height: 7rem;
     padding: 0 var(--spacing-lg);
     display: flex;
     align-items: center;
@@ -305,8 +330,8 @@
   }
 
   .item-image-wrapper {
-    width: 8.0rem;
-    height: 8.0rem;
+    width: 8rem;
+    height: 8rem;
     border-radius: var(--radius-md);
     border: 0.1rem solid var(--color-border);
     overflow: hidden;
@@ -544,7 +569,7 @@
   }
 
   .empty-state h3 {
-    font-size: 2.0rem;
+    font-size: 2rem;
     font-weight: 700;
     margin-bottom: var(--spacing-xs);
   }
@@ -553,7 +578,7 @@
     font-size: 1.5rem;
     color: var(--color-text-muted);
     margin-bottom: var(--spacing-xl);
-    max-width: 28.0rem;
+    max-width: 28rem;
   }
 
   /* Skeleton Loading Styles */
@@ -571,8 +596,8 @@
   }
 
   .skeleton-thumb {
-    width: 8.0rem;
-    height: 8.0rem;
+    width: 8rem;
+    height: 8rem;
     border-radius: var(--radius-md);
     background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
     background-size: 200% 100%;
@@ -619,8 +644,8 @@
   }
 
   .spinner {
-    width: 4.0rem;
-    height: 4.0rem;
+    width: 4rem;
+    height: 4rem;
     border: 0.3rem solid var(--color-border);
     border-top-color: var(--color-primary);
     border-radius: var(--radius-full);
@@ -628,12 +653,20 @@
   }
 
   @keyframes shimmer {
-    0% { background-position: 200% 0; }
-    100% { background-position: -200% 0; }
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
   }
 
   @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
   }
 </style>

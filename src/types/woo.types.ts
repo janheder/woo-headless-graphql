@@ -107,7 +107,6 @@ export interface CartData {
   };
   subtotal?: string | null;
   total?: string | null;
-  contentsCount: number;
 }
 
 export interface GetCartResponse {
