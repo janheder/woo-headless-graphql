@@ -15,6 +15,7 @@
   "dependencies": {
     "@astrojs/cloudflare": "^13.5.3",
     "@astrojs/svelte": "^8.1.1",
+    "@splidejs/splide": "^4.1.4",
     "@urql/core": "^6.0.1",
     "astro": "^6.3.6",
     "graphql": "^16.14.0",
