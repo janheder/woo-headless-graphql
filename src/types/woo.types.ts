@@ -197,8 +197,8 @@ export interface CheckoutResponse {
     redirect?: string | null;
     order?: {
       id: string;
-      orderId?: number | null;
       orderNumber?: string | null;
+      orderKey?: string | null;
       status?: string | null;
       total?: string | null;
     } | null;

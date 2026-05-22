@@ -315,8 +315,8 @@ export const CHECKOUT = `
       redirect
       order {
         id
-        orderId
         orderNumber
+        orderKey
         status
         total
       }

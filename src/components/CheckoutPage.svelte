@@ -165,7 +165,7 @@
     }
 
     const order = response.data?.checkout?.order;
-    orderNumber = order?.orderNumber || order?.orderId?.toString() || "vytvořena";
+    orderNumber = order?.orderNumber || order?.id || "vytvořena";
     orderTotal = formatPrice(order?.total) || checkoutTotal;
     await cart.fetchCart();
   }
