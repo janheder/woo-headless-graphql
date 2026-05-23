@@ -3,6 +3,7 @@ import { ClientRouter } from 'astro:transitions';
 import LoadingIndicator from '../components/LoadingIndicator.astro';
 import CartButton from '../components/CartButton.svelte';
 import CartDrawer from '../components/CartDrawer.svelte';
+import FooterContact from '../components/FooterContact.astro';
 import type { SeoMetadata } from '../types/woo.types';
 import { rewriteSeoUrl } from '../lib/utils';
 import '../styles/global.css';
@@ -70,6 +71,7 @@ const {
     </main>
 
     <footer class="main-footer">
+      <FooterContact />
       <div class="container footer-container">
         <p>&copy; {new Date().getFullYear()} Headless WooCommerce. Všechna práva vyhrazena.</p>
       </div>
