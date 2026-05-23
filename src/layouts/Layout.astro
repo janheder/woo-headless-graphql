@@ -5,6 +5,7 @@ import MainNav from '../components/MainNav.astro';
 import CartButton from '../components/CartButton.svelte';
 import CartDrawer from '../components/CartDrawer.svelte';
 import FooterContact from '../components/FooterContact.astro';
+import NewsletterSignup from '../components/NewsletterSignup.astro';
 import type { SeoMetadata } from '../types/woo.types';
 import { rewriteSeoUrl } from '../lib/utils';
 import '../styles/global.css';
@@ -69,6 +70,7 @@ const {
 
     <footer class="main-footer">
       <FooterContact />
+      <NewsletterSignup />
       <div class="container footer-container">
         <p>&copy; {new Date().getFullYear()} Headless WooCommerce. Všechna práva vyhrazena.</p>
       </div>

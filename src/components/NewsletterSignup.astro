@@ -1,0 +1,115 @@
+---
+// NewsletterSignup component – Ecomail subscription form
+// Replace the action URL with your actual Ecomail endpoint
+---
+
+<section class="newsletter">
+  <div class="container">
+    <div class="newsletter__content">
+      <h2 class="newsletter__title">Odebírejte novinky</h2>
+      <p class="newsletter__text">
+        Buďte první, kdo se dozví o nových produktech, slevách a akcích.
+      </p>
+
+      <form
+        class="newsletter__form"
+        action="https://xxx.ecomailapp.cz/public/subscribe/1/xxx"
+        method="post"
+        target="_blank"
+      >
+        <div class="newsletter__input-wrap">
+          <input
+            type="email"
+            name="email"
+            class="newsletter__input"
+            placeholder="Váš e-mail"
+            required
+            autocomplete="email"
+          />
+          <button type="submit" class="newsletter__btn">Přihlásit se</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</section>
+
+<style>
+  .newsletter {
+    padding: var(--spacing-xxl) 0;
+    background-color: var(--color-primary-light);
+    border-top: 0.1rem solid var(--color-border);
+  }
+
+  .newsletter__content {
+    text-align: center;
+    max-width: 52rem;
+    margin: 0 auto;
+  }
+
+  .newsletter__title {
+    font-size: 2.4rem;
+    font-weight: 700;
+    margin-bottom: var(--spacing-xs);
+    color: var(--color-text);
+  }
+
+  .newsletter__text {
+    font-size: 1.5rem;
+    color: var(--color-text-muted);
+    margin-bottom: var(--spacing-lg);
+  }
+
+  .newsletter__form {
+    display: flex;
+    justify-content: center;
+  }
+
+  .newsletter__input-wrap {
+    display: flex;
+    width: 100%;
+    max-width: 44rem;
+    gap: 0;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .newsletter__input {
+    flex: 1;
+    padding: 1.4rem 1.6rem;
+    font-size: 1.5rem;
+    border: 0.1rem solid var(--color-border);
+    border-right: none;
+    border-radius: var(--radius-md) 0 0 var(--radius-md);
+    background-color: var(--color-surface);
+    color: var(--color-text);
+    transition: border-color var(--transition-fast) ease;
+  }
+
+  .newsletter__input::placeholder {
+    color: var(--color-text-light);
+  }
+
+  .newsletter__input:focus {
+    border-color: var(--color-primary);
+    outline: none;
+  }
+
+  .newsletter__btn {
+    padding: 1.4rem 2.4rem;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #fff;
+    background-color: var(--color-primary);
+    border: none;
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    cursor: pointer;
+    transition: background-color var(--transition-fast) ease;
+    white-space: nowrap;
+  }
+
+  .newsletter__btn:hover {
+    background-color: var(--color-primary-hover);
+  }
+
+</style>
