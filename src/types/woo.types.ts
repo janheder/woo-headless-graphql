@@ -226,6 +226,12 @@ export interface MenuItem {
   childItems?: {
     nodes: MenuItem[];
   } | null;
+  connectedNode?: {
+    node: {
+      __typename: string;
+      uri: string;
+    } | null;
+  } | null;
 }
 
 /**

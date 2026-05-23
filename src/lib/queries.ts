@@ -11,6 +11,12 @@ export const MENU_ITEM_FRAGMENT = `
     target
     parentId
     cssClasses
+    connectedNode {
+      node {
+        __typename
+        uri
+      }
+    }
     childItems {
       nodes {
         id
@@ -21,6 +27,12 @@ export const MENU_ITEM_FRAGMENT = `
         target
         parentId
         cssClasses
+        connectedNode {
+          node {
+            __typename
+            uri
+          }
+        }
       }
     }
   }

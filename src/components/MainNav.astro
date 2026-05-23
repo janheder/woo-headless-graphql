@@ -35,16 +35,32 @@ function getChildren(parentId: string): MenuItem[] {
 }
 
 /**
- * Convert a WordPress URL to a relative path when possible.
+ * Resolve the best possible href for a menu item.
+ *
+ * Priority order:
+ * 1. `connectedNode.node.uri` – canonical URI from the linked term/post (always correct)
+ * 2. `path` – relative path from the menu item (may be stale after permalink changes)
+ * 3. `url` – absolute URL from the menu item (fallback)
+ *
  * WordPress menu items may contain absolute URLs like https://backend.janheder.space/...
  * We strip the origin to make them relative for the headless frontend.
  */
-function toRelativePath(url: string): string {
+function resolveMenuItemHref(item: MenuItem): string {
+  // Prefer the canonical URI from the connected node (term, post, etc.)
+  const canonicalUri = item.connectedNode?.node?.uri;
+  if (canonicalUri) {
+    return canonicalUri;
+  }
+
+  const raw = item.path || item.url;
+  if (!raw) return '#';
+
   try {
-    const parsed = new URL(url);
+    const parsed = new URL(raw);
     return parsed.pathname + parsed.search + parsed.hash;
   } catch {
-    return url;
+    // raw is already a relative path like "/category/clothing/"
+    return raw;
   }
 }
 ---
@@ -59,7 +75,7 @@ function toRelativePath(url: string): string {
           return (
             <li class:list={['main-nav__item', hasChildren && 'main-nav__item--has-children']}>
               <a
-                href={toRelativePath(item.path || item.url)}
+                href={resolveMenuItemHref(item)}
                 target={item.target || undefined}
                 class:list={['main-nav__link', ...(item.cssClasses || [])]}
               >
@@ -70,7 +86,7 @@ function toRelativePath(url: string): string {
                   {children.map((child) => (
                     <li class="main-nav__submenu-item">
                       <a
-                        href={toRelativePath(child.path || child.url)}
+                        href={resolveMenuItemHref(child)}
                         target={child.target || undefined}
                         class:list={['main-nav__submenu-link', ...(child.cssClasses || [])]}
                       >
