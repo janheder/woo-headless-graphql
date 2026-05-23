@@ -13,7 +13,7 @@ import '@splidejs/splide/css';
 ---
 
 <section class="hero-carousel" aria-label="Hero Carousel">
-  <div class="splide" data-splide='{"type":"loop","perPage":1,"autoplay":true,"pauseOnHover":true,"resetProgress":false,"arrows":true,"pagination":true,"speed":800,"interval":5000,"lazyLoad":"nearby"}'>
+  <div id="hero-slider" class="splide" data-splide='{"type":"loop","perPage":1,"autoplay":true,"pauseOnHover":true,"resetProgress":false,"arrows":true,"pagination":true,"speed":800,"interval":5000,"lazyLoad":"nearby"}'>
     <div class="splide__track">
       <ul class="splide__list">
         <!-- Slide 1 -->
@@ -95,11 +95,27 @@ import '@splidejs/splide/css';
 <script>
   import Splide from '@splidejs/splide';
 
-  document.addEventListener('DOMContentLoaded', () => {
-    const splideElements = document.querySelectorAll<HTMLElement>('.splide');
-    splideElements.forEach((el) => {
-      new Splide(el).mount();
-    });
+  /**
+   * Initialize the hero Splide carousel.
+   * Uses `astro:page-load` so it fires on initial load AND after every
+   * View Transition swap (when the DOM is replaced but `DOMContentLoaded`
+   * does not fire again).
+   */
+  document.addEventListener('astro:page-load', () => {
+    const el = document.getElementById('hero-slider');
+    if (el instanceof HTMLElement) {
+      new Splide(el, {
+        type: 'fade',
+        rewind: true,
+        autoplay: true,
+        interval: 6000,
+        pauseOnHover: false,
+        arrows: true,
+        pagination: true,
+        speed: 1200,
+        easing: 'cubic-bezier(0.25, 1, 0.5, 1)',
+      }).mount();
+    }
   });
 </script>
 
