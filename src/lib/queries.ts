@@ -72,6 +72,26 @@ export const PRODUCT_FRAGMENT = `
       salePrice
       onSale
     }
+    ... on GroupProduct {
+      price
+      products(first: 50) {
+        nodes {
+          ... on SimpleProduct {
+            id
+            databaseId
+            name
+            slug
+            price
+            regularPrice
+            salePrice
+            onSale
+            image {
+              ...ImageFields
+            }
+          }
+        }
+      }
+    }
   }
 `;
 

@@ -3,7 +3,7 @@ import Layout from '../../layouts/Layout.astro';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import { fetchGQL } from '../../lib/fetch-gql';
 import { GET_PRODUCTS, GET_PRODUCT_BY_SLUG } from '../../lib/queries';
-import type { GetProductsResponse, GetProductBySlugResponse } from '../../types/woo.types';
+import type { GetProductsResponse, GetProductBySlugResponse, GroupedChildProduct } from '../../types/woo.types';
 import { formatPrice, rewriteAssetUrl } from '../../lib/utils';
 
 // Pre-render static paths for all products
@@ -27,8 +27,8 @@ if (!data || !data.product) {
 
 const product = data.product;
 
-const mainImageSrc = product.image?.sourceUrl 
-  ? rewriteAssetUrl(product.image.sourceUrl) 
+const mainImageSrc = product.image?.sourceUrl
+  ? rewriteAssetUrl(product.image.sourceUrl)
   : 'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?auto=format&fit=crop&q=80&w=600';
 
 const galleryImages = product.galleryImages?.nodes || [];
@@ -38,6 +38,8 @@ const cleanPrice = formatPrice(product.price);
 const cleanRegularPrice = formatPrice(product.regularPrice);
 const cleanSalePrice = formatPrice(product.salePrice);
 const isVariableProduct = product.__typename === 'VariableProduct';
+const isGroupedProduct = product.__typename === 'GroupProduct';
+const groupedChildren: GroupedChildProduct[] = product.products?.nodes || [];
 
 // Calculate exact savings percentage for premium visual helper
 let discountPercentage = 0;
@@ -130,20 +132,58 @@ breadcrumbItems.push({ label: product.name });
 
         <!-- Actions / Add to Cart -->
         <div class="buy-section">
-          {isVariableProduct ? (
+          {isVariableProduct && (
             <p class="variation-note">
               Tento produkt má varianty. Výběr variant zatím není v headless košíku dostupný.
             </p>
-          ) : (
-            <button 
-              class="btn btn-primary btn-large ajax-add-to-cart" 
+          )}
+          {isGroupedProduct && (
+            <div class="grouped-products">
+              <p class="grouped-note">Tento produkt obsahuje následující položky:</p>
+              <div class="grouped-children-list">
+                {groupedChildren.map((child) => (
+                  <div class="grouped-child-item">
+                    <div class="child-image-wrap">
+                      {child.image?.sourceUrl ? (
+                        <img src={rewriteAssetUrl(child.image.sourceUrl)} alt={child.name} class="child-image" />
+                      ) : (
+                        <div class="child-image-placeholder"></div>
+                      )}
+                    </div>
+                    <div class="child-info">
+                      <span class="child-name">{child.name}</span>
+                      <span class="child-price">
+                        {child.onSale && child.regularPrice ? (
+                          <>{' '}<span class="price-old">{formatPrice(child.regularPrice)}</span>{' '}<span class="price-new">{formatPrice(child.salePrice)}</span></>
+                        ) : (
+                          <span class="price-new">{formatPrice(child.price)}</span>
+                        )}
+                      </span>
+                    </div>
+                    <button
+                      class="btn btn-primary btn-sm ajax-add-to-cart"
+                      data-product-id={child.databaseId}
+                      aria-label={`Přidat ${child.name} do košíku`}
+                    >
+                      Přidat
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {!isVariableProduct && !isGroupedProduct && (
+            <button
+              class="btn btn-primary btn-large ajax-add-to-cart"
               data-product-id={product.databaseId}
               aria-label={`Přidat ${product.name} do košíku`}
             >
               Přidat do košíku
             </button>
           )}
-          <span class="delivery-status">✓ Skladem – připraveno k odeslání</span>
+          {!isGroupedProduct && (
+            <span class="delivery-status">✓ Skladem – připraveno k odeslání</span>
+          )}
         </div>
       </div>
     </div>
@@ -375,6 +415,100 @@ breadcrumbItems.push({ label: product.name });
     border: 0.1rem solid var(--color-border);
     border-radius: var(--radius-md);
     padding: var(--spacing-md);
+  }
+
+  /* Grouped Product Styles */
+  .grouped-products {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+  }
+
+  .grouped-note {
+    font-size: 1.4rem;
+    color: var(--color-text-muted);
+    font-weight: 500;
+  }
+
+  .grouped-children-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+  }
+
+  .grouped-child-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-sm);
+    border: 0.1rem solid var(--color-border);
+    border-radius: var(--radius-md);
+    background-color: var(--color-surface);
+    transition: border-color var(--transition-fast);
+  }
+
+  .grouped-child-item:hover {
+    border-color: var(--color-border-hover);
+  }
+
+  .child-image-wrap {
+    width: 5rem;
+    height: 5rem;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    flex-shrink: 0;
+    background-color: var(--color-bg);
+  }
+
+  .child-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .child-image-placeholder {
+    width: 100%;
+    height: 100%;
+    background-color: var(--color-border);
+  }
+
+  .child-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    min-width: 0;
+  }
+
+  .child-name {
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--color-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .child-price {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+  }
+
+  .child-price .price-old {
+    font-size: 1.2rem;
+  }
+
+  .child-price .price-new {
+    font-size: 1.4rem;
+    font-weight: 700;
+  }
+
+  .btn-sm {
+    padding: 0.6rem var(--spacing-md);
+    font-size: 1.3rem;
+    border-radius: var(--radius-sm);
+    white-space: nowrap;
   }
 
   /* Reusable button styled for details context */

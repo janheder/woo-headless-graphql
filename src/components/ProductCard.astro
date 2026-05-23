@@ -17,6 +17,7 @@ const cleanPrice = formatPrice(product.price);
 const cleanRegularPrice = formatPrice(product.regularPrice);
 const cleanSalePrice = formatPrice(product.salePrice);
 const isVariableProduct = product.__typename === 'VariableProduct';
+const isGroupedProduct = product.__typename === 'GroupProduct';
 ---
 
 <article class="product-card">
@@ -49,16 +50,24 @@ const isVariableProduct = product.__typename === 'VariableProduct';
     </div>
 
     {isVariableProduct ? (
-      <a 
+      <a
         href={`/product/${product.slug}`}
         class="btn btn-primary btn-full"
         aria-label={`Vybrat možnosti produktu ${product.name}`}
       >
         Vybrat možnosti
       </a>
+    ) : isGroupedProduct ? (
+      <a
+        href={`/product/${product.slug}`}
+        class="btn btn-primary btn-full"
+        aria-label={`Zobrazit položky produktu ${product.name}`}
+      >
+        Zobrazit položky
+      </a>
     ) : (
-      <button 
-        class="btn btn-primary btn-full ajax-add-to-cart" 
+      <button
+        class="btn btn-primary btn-full ajax-add-to-cart"
         data-product-id={product.databaseId}
         aria-label={`Přidat ${product.name} do košíku`}
       >

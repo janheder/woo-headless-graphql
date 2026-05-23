@@ -40,6 +40,26 @@ export interface Product {
   productCategories?: {
     nodes: Category[];
   } | null;
+  /** GroupProduct children (only populated when __typename === 'GroupProduct') */
+  products?: {
+    nodes: GroupedChildProduct[];
+  } | null;
+}
+
+/**
+ * A child product within a GroupProduct listing.
+ * These are always SimpleProduct instances with basic pricing.
+ */
+export interface GroupedChildProduct {
+  id: string;
+  databaseId: number;
+  name: string;
+  slug: string;
+  price?: string | null;
+  regularPrice?: string | null;
+  salePrice?: string | null;
+  onSale?: boolean | null;
+  image?: WooImage | null;
 }
 
 /**
