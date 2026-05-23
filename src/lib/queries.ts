@@ -173,7 +173,7 @@ export const GET_CATEGORIES = `
   ${IMAGE_FRAGMENT}
   ${CATEGORY_FRAGMENT}
   query GetCategories($first: Int = 20) {
-    productCategories(first: $first, where: { hideEmpty: true }) {
+    productCategories(first: $first) {
       nodes {
         ...CategoryFields
       }
