@@ -4,15 +4,17 @@ import { GET_MENU } from '../lib/queries';
 import type { GetMenuResponse, MenuItem } from '../types/woo.types';
 
 interface Props {
-  menuName?: string;
+  /** Theme location to query (e.g. "primary", "secondary") */
   menuLocation?: string;
+  /** Menu slug to query by SLUG idType (fallback if location not found) */
+  menuSlug?: string;
 }
 
-const { menuName = 'Hlavní menu', menuLocation } = Astro.props;
+const { menuLocation = 'primary', menuSlug } = Astro.props;
 
-// Query by NAME if no location is provided, otherwise by LOCATION
-const idType = menuLocation ? 'LOCATION' : 'NAME';
-const id = menuLocation || menuName;
+// Default to LOCATION query, fallback to SLUG if menuSlug prop is explicitly provided
+const idType = menuSlug ? 'SLUG' : 'LOCATION';
+const id = menuSlug || menuLocation;
 
 const data = await fetchGQL<GetMenuResponse>(GET_MENU, {
   id,
@@ -48,7 +50,7 @@ function toRelativePath(url: string): string {
 ---
 
 {
-  menuItems.length > 0 ? (
+  menuItems.length > 0 && (
     <nav class="main-nav">
       <ul class="main-nav__list">
         {topLevelItems.map((item) => {
@@ -81,14 +83,6 @@ function toRelativePath(url: string): string {
             </li>
           );
         })}
-      </ul>
-    </nav>
-  ) : (
-    <nav class="main-nav">
-      <ul class="main-nav__list">
-        <li class="main-nav__item">
-          <a href="/" class="main-nav__link">Domů</a>
-        </li>
       </ul>
     </nav>
   )
