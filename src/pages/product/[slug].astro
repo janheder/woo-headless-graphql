@@ -138,39 +138,69 @@ breadcrumbItems.push({ label: product.name });
             </p>
           )}
           {isGroupedProduct && (
-            <div class="grouped-products">
-              <p class="grouped-note">Tento produkt obsahuje následující položky:</p>
-              <div class="grouped-children-list">
-                {groupedChildren.map((child) => (
-                  <div class="grouped-child-item">
-                    <div class="child-image-wrap">
-                      {child.image?.sourceUrl ? (
-                        <img src={rewriteAssetUrl(child.image.sourceUrl)} alt={child.name} class="child-image" />
-                      ) : (
-                        <div class="child-image-placeholder"></div>
-                      )}
-                    </div>
-                    <div class="child-info">
-                      <span class="child-name">{child.name}</span>
-                      <span class="child-price">
+            <form class="cart grouped_form" action="" method="post" enctype="multipart/form-data">
+              <table cellspacing="0" class="woocommerce-grouped-product-list group_table">
+                <tbody>
+                  {groupedChildren.map((child) => (
+                    <tr id={`product-${child.databaseId}`} class="woocommerce-grouped-product-list-item">
+                      <td class="woocommerce-grouped-product-list-item__quantity">
+                        <div class="quantity">
+                          <label class="screen-reader-text" for={`quantity_${child.databaseId}`}>
+                            {child.name} množství
+                          </label>
+                          <input
+                            type="number"
+                            id={`quantity_${child.databaseId}`}
+                            class="input-text qty text"
+                            name={`quantity[${child.databaseId}]`}
+                            value="1"
+                            aria-label="Množství"
+                            min="0"
+                            step="1"
+                            placeholder="0"
+                            inputmode="numeric"
+                            autocomplete="off"
+                          />
+                        </div>
+                      </td>
+                      <td class="woocommerce-grouped-product-list-item__label">
+                        <label for={`product-${child.databaseId}`}>
+                          <a href={`/product/${child.slug}`}>{child.name}</a>
+                        </label>
+                      </td>
+                      <td class="woocommerce-grouped-product-list-item__price">
                         {child.onSale && child.regularPrice ? (
-                          <>{' '}<span class="price-old">{formatPrice(child.regularPrice)}</span>{' '}<span class="price-new">{formatPrice(child.salePrice)}</span></>
+                          <>
+                            <del aria-hidden="true">
+                              <span class="woocommerce-Price-amount amount">
+                                <bdi>{formatPrice(child.regularPrice)}&nbsp;<span class="woocommerce-Price-currencySymbol">Kč</span></bdi>
+                              </span>
+                            </del>
+                            <span class="screen-reader-text">Původní cena byla: {formatPrice(child.regularPrice)}.</span>
+                            <ins aria-hidden="true">
+                              <span class="woocommerce-Price-amount amount">
+                                <bdi>{formatPrice(child.salePrice)}&nbsp;<span class="woocommerce-Price-currencySymbol">Kč</span></bdi>
+                              </span>
+                            </ins>
+                            <span class="screen-reader-text">Aktuální cena je: {formatPrice(child.salePrice)}.</span>
+                          </>
                         ) : (
-                          <span class="price-new">{formatPrice(child.price)}</span>
+                          <span class="woocommerce-Price-amount amount">
+                            <bdi>{formatPrice(child.price)}&nbsp;<span class="woocommerce-Price-currencySymbol">Kč</span></bdi>
+                          </span>
                         )}
-                      </span>
-                    </div>
-                    <button
-                      class="btn btn-primary btn-sm ajax-add-to-cart"
-                      data-product-id={child.databaseId}
-                      aria-label={`Přidat ${child.name} do košíku`}
-                    >
-                      Přidat
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              <input type="hidden" name="add-to-cart" value={product.databaseId} />
+
+              <button type="submit" class="single_add_to_cart_button button alt btn btn-primary btn-large">
+                Přidat do košíku
+              </button>
+            </form>
           )}
           {!isVariableProduct && !isGroupedProduct && (
             <button
@@ -215,6 +245,41 @@ breadcrumbItems.push({ label: product.name });
       }
     });
   });
+
+  // Grouped product form submission handler
+  const groupedForm = document.querySelector<HTMLFormElement>('.cart.grouped_form');
+  if (groupedForm) {
+    groupedForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const formData = new FormData(groupedForm);
+      const items: { productId: number; quantity: number }[] = [];
+
+      // Parse quantity inputs: name="quantity[17]" -> productId=17
+      for (const [name, value] of formData.entries()) {
+        const match = name.match(/^quantity\[(\d+)\]$/);
+        if (match) {
+          const qty = parseInt(value as string, 10);
+          if (qty > 0) {
+            items.push({ productId: parseInt(match[1], 10), quantity: qty });
+          }
+        }
+      }
+
+      if (items.length === 0) {
+        alert('Vyberte alespoň jednu položku s množstvím větším než 0.');
+        return;
+      }
+
+      // Dynamically import the cart store
+      const { cart } = await import('../../stores/cart.svelte.ts');
+
+      // Add each item sequentially to the cart
+      for (const item of items) {
+        await cart.addToCart(item.productId, item.quantity);
+      }
+    });
+  }
 </script>
 
 <style>
@@ -417,98 +482,133 @@ breadcrumbItems.push({ label: product.name });
     padding: var(--spacing-md);
   }
 
-  /* Grouped Product Styles */
-  .grouped-products {
+  /* Grouped Product Styles - WooCommerce native table layout */
+  .cart.grouped_form {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-md);
+    gap: var(--spacing-lg);
   }
 
-  .grouped-note {
-    font-size: 1.4rem;
-    color: var(--color-text-muted);
-    font-weight: 500;
-  }
-
-  .grouped-children-list {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-sm);
-  }
-
-  .grouped-child-item {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-md);
-    padding: var(--spacing-sm);
+  .woocommerce-grouped-product-list.group_table {
+    width: 100%;
+    border-collapse: collapse;
+    border-spacing: 0;
     border: 0.1rem solid var(--color-border);
     border-radius: var(--radius-md);
-    background-color: var(--color-surface);
-    transition: border-color var(--transition-fast);
-  }
-
-  .grouped-child-item:hover {
-    border-color: var(--color-border-hover);
-  }
-
-  .child-image-wrap {
-    width: 5rem;
-    height: 5rem;
-    border-radius: var(--radius-sm);
     overflow: hidden;
-    flex-shrink: 0;
-    background-color: var(--color-bg);
   }
 
-  .child-image {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+  .woocommerce-grouped-product-list-item {
+    border-bottom: 0.1rem solid var(--color-border);
   }
 
-  .child-image-placeholder {
-    width: 100%;
-    height: 100%;
-    background-color: var(--color-border);
+  .woocommerce-grouped-product-list-item:last-child {
+    border-bottom: none;
   }
 
-  .child-info {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 0.2rem;
-    min-width: 0;
+  .woocommerce-grouped-product-list-item td {
+    padding: var(--spacing-md);
+    vertical-align: middle;
   }
 
-  .child-name {
-    font-size: 1.4rem;
-    font-weight: 600;
-    color: var(--color-text);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  .woocommerce-grouped-product-list-item__quantity {
+    width: 10rem;
+    text-align: center;
   }
 
-  .child-price {
+  .woocommerce-grouped-product-list-item__quantity .quantity {
     display: flex;
     align-items: center;
-    gap: var(--spacing-xs);
+    justify-content: center;
   }
 
-  .child-price .price-old {
-    font-size: 1.2rem;
-  }
-
-  .child-price .price-new {
+  .woocommerce-grouped-product-list-item__quantity .qty {
+    width: 6rem;
+    padding: 0.6rem;
     font-size: 1.4rem;
+    text-align: center;
+    border: 0.1rem solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    -moz-appearance: textfield;
+  }
+
+  .woocommerce-grouped-product-list-item__quantity .qty::-webkit-outer-spin-button,
+  .woocommerce-grouped-product-list-item__quantity .qty::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  .woocommerce-grouped-product-list-item__label {
+    padding-left: var(--spacing-sm);
+  }
+
+  .woocommerce-grouped-product-list-item__label label {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--color-text);
+    cursor: pointer;
+  }
+
+  .woocommerce-grouped-product-list-item__label label a {
+    color: var(--color-text);
+    text-decoration: none;
+    transition: color var(--transition-fast);
+  }
+
+  .woocommerce-grouped-product-list-item__label label a:hover {
+    color: var(--color-primary);
+    text-decoration: underline;
+  }
+
+  .woocommerce-grouped-product-list-item__price {
+    text-align: right;
+    white-space: nowrap;
+    width: 14rem;
+  }
+
+  .woocommerce-grouped-product-list-item__price .woocommerce-Price-amount {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-text);
+  }
+
+  .woocommerce-grouped-product-list-item__price del {
+    opacity: 0.5;
+  }
+
+  .woocommerce-grouped-product-list-item__price del .woocommerce-Price-amount {
+    font-size: 1.3rem;
+    font-weight: 400;
+    text-decoration: line-through;
+  }
+
+  .woocommerce-grouped-product-list-item__price ins {
+    text-decoration: none;
+    margin-left: var(--spacing-xs);
+  }
+
+  .woocommerce-grouped-product-list-item__price ins .woocommerce-Price-amount {
+    color: var(--color-danger);
     font-weight: 700;
   }
 
-  .btn-sm {
-    padding: 0.6rem var(--spacing-md);
-    font-size: 1.3rem;
-    border-radius: var(--radius-sm);
-    white-space: nowrap;
+  .screen-reader-text {
+    border: 0;
+    clip: rect(1px, 1px, 1px, 1px);
+    clip-path: inset(50%);
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    padding: 0;
+    position: absolute;
+    width: 1px;
+    word-wrap: normal !important;
+  }
+
+  .single_add_to_cart_button.button.alt {
+    align-self: flex-start;
   }
 
   /* Reusable button styled for details context */
