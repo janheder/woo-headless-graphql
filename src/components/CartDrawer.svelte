@@ -210,6 +210,7 @@
               href="/cart"
               class="btn btn-primary btn-full cart-link"
               disabled={cart.loading}
+              onclick={() => cart.toggleDrawer(false)}
             >
               {#if cart.loading}
                 Aktualizuji...
