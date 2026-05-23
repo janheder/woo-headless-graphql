@@ -211,6 +211,43 @@ export interface CheckoutInput {
   isPaid?: boolean;
 }
 
+/**
+ * WordPress Menu Item interface.
+ */
+export interface MenuItem {
+  id: string;
+  databaseId: number;
+  label: string;
+  url: string;
+  path: string;
+  target?: string | null;
+  parentId?: string | null;
+  cssClasses?: string[] | null;
+  childItems?: {
+    nodes: MenuItem[];
+  } | null;
+}
+
+/**
+ * WordPress Menu interface.
+ */
+export interface Menu {
+  id: string;
+  databaseId: number;
+  name: string;
+  slug: string;
+  menuItems: {
+    nodes: MenuItem[];
+  };
+}
+
+/**
+ * API Response wrapper for menu queries.
+ */
+export interface GetMenuResponse {
+  menu: Menu | null;
+}
+
 export interface CheckoutResponse {
   checkout: {
     result?: string | null;

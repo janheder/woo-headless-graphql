@@ -1,6 +1,7 @@
 ---
 import { ClientRouter } from 'astro:transitions';
 import LoadingIndicator from '../components/LoadingIndicator.astro';
+import MainNav from '../components/MainNav.astro';
 import CartButton from '../components/CartButton.svelte';
 import CartDrawer from '../components/CartDrawer.svelte';
 import FooterContact from '../components/FooterContact.astro';
@@ -57,12 +58,8 @@ const {
         <a href="/" class="logo">
           <span>Woo</span>Headless
         </a>
-        <nav class="main-nav">
-          <ul>
-            <li><a href="/">Domů</a></li>
-            <li><CartButton client:load /></li>
-          </ul>
-        </nav>
+        <MainNav />
+        <div><CartButton client:load /></div>
       </div>
     </header>
     
@@ -129,21 +126,6 @@ const {
   }
 
   .logo span {
-    color: var(--color-primary);
-  }
-
-  .main-nav ul {
-    display: flex;
-    gap: var(--spacing-lg);
-  }
-
-  .main-nav a {
-    font-size: 1.5rem;
-    font-weight: 500;
-    color: var(--color-text-muted);
-  }
-
-  .main-nav a:hover {
     color: var(--color-primary);
   }
 

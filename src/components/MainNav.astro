@@ -1,0 +1,165 @@
+---
+import { fetchGQL } from '../lib/fetch-gql';
+import { GET_MENU } from '../lib/queries';
+import type { GetMenuResponse, MenuItem } from '../types/woo.types';
+
+interface Props {
+  menuName?: string;
+  menuLocation?: string;
+}
+
+const { menuName = 'Hlavní menu', menuLocation } = Astro.props;
+
+// Query by NAME if no location is provided, otherwise by LOCATION
+const idType = menuLocation ? 'LOCATION' : 'NAME';
+const id = menuLocation || menuName;
+
+const data = await fetchGQL<GetMenuResponse>(GET_MENU, {
+  id,
+  idType,
+});
+
+const menuItems: MenuItem[] = data?.menu?.menuItems?.nodes || [];
+
+// Separate top-level items (those without a parentId) from children
+const topLevelItems = menuItems.filter((item) => !item.parentId);
+const childItems = menuItems.filter((item) => item.parentId);
+
+/**
+ * Get children for a given parent menu item.
+ */
+function getChildren(parentId: string): MenuItem[] {
+  return childItems.filter((item) => item.parentId === parentId);
+}
+
+/**
+ * Convert a WordPress URL to a relative path when possible.
+ * WordPress menu items may contain absolute URLs like https://backend.janheder.space/...
+ * We strip the origin to make them relative for the headless frontend.
+ */
+function toRelativePath(url: string): string {
+  try {
+    const parsed = new URL(url);
+    return parsed.pathname + parsed.search + parsed.hash;
+  } catch {
+    return url;
+  }
+}
+---
+
+{
+  menuItems.length > 0 ? (
+    <nav class="main-nav">
+      <ul class="main-nav__list">
+        {topLevelItems.map((item) => {
+          const children = getChildren(item.id);
+          const hasChildren = children.length > 0;
+          return (
+            <li class:list={['main-nav__item', hasChildren && 'main-nav__item--has-children']}>
+              <a
+                href={toRelativePath(item.path || item.url)}
+                target={item.target || undefined}
+                class:list={['main-nav__link', ...(item.cssClasses || [])]}
+              >
+                {item.label}
+              </a>
+              {hasChildren && (
+                <ul class="main-nav__submenu">
+                  {children.map((child) => (
+                    <li class="main-nav__submenu-item">
+                      <a
+                        href={toRelativePath(child.path || child.url)}
+                        target={child.target || undefined}
+                        class:list={['main-nav__submenu-link', ...(child.cssClasses || [])]}
+                      >
+                        {child.label}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
+  ) : (
+    <nav class="main-nav">
+      <ul class="main-nav__list">
+        <li class="main-nav__item">
+          <a href="/" class="main-nav__link">Domů</a>
+        </li>
+      </ul>
+    </nav>
+  )
+}
+
+<style>
+  .main-nav__list {
+    display: flex;
+    gap: var(--spacing-lg);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .main-nav__item {
+    position: relative;
+  }
+
+  .main-nav__link {
+    font-size: 1.5rem;
+    font-weight: 500;
+    color: var(--color-text-muted);
+    text-decoration: none;
+    transition: color var(--transition-fast) ease;
+    padding: 0.8rem 0;
+    display: inline-block;
+  }
+
+  .main-nav__link:hover {
+    color: var(--color-primary);
+  }
+
+  /* Submenu (dropdown) */
+  .main-nav__submenu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background-color: var(--color-surface);
+    border: 0.1rem solid var(--color-border);
+    border-radius: 0.4rem;
+    padding: var(--spacing-sm) 0;
+    min-width: 20rem;
+    list-style: none;
+    margin: 0;
+    z-index: 200;
+    box-shadow: 0 0.4rem 1.2rem rgba(0, 0, 0, 0.1);
+  }
+
+  .main-nav__item--has-children:hover .main-nav__submenu,
+  .main-nav__item--has-children:focus-within .main-nav__submenu {
+    display: block;
+  }
+
+  .main-nav__submenu-item {
+    margin: 0;
+  }
+
+  .main-nav__submenu-link {
+    display: block;
+    padding: 0.6rem var(--spacing-md);
+    font-size: 1.4rem;
+    font-weight: 500;
+    color: var(--color-text-muted);
+    text-decoration: none;
+    transition: background-color var(--transition-fast) ease, color var(--transition-fast) ease;
+    white-space: nowrap;
+  }
+
+  .main-nav__submenu-link:hover {
+    background-color: var(--color-border);
+    color: var(--color-primary);
+  }
+</style>

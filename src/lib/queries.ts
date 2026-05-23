@@ -1,4 +1,32 @@
 /**
+ * GraphQL Fragment for Menu Item fields.
+ */
+export const MENU_ITEM_FRAGMENT = `
+  fragment MenuItemFields on MenuItem {
+    id
+    databaseId
+    label
+    url
+    path
+    target
+    parentId
+    cssClasses
+    childItems {
+      nodes {
+        id
+        databaseId
+        label
+        url
+        path
+        target
+        parentId
+        cssClasses
+      }
+    }
+  }
+`;
+
+/**
  * GraphQL Fragment for MediaItem / Image fields.
  */
 export const IMAGE_FRAGMENT = `
@@ -305,6 +333,27 @@ export const GET_CHECKOUT_DATA = `
       subtotal
       shippingTotal
       total
+    }
+  }
+`;
+
+/**
+ * Query to fetch a WordPress navigation menu by its location or name.
+ * Uses the `MENU_ITEM_FRAGMENT` for consistent menu item fields.
+ */
+export const GET_MENU = `
+  ${MENU_ITEM_FRAGMENT}
+  query GetMenu($id: ID!, $idType: MenuNodeIdTypeEnum = LOCATION) {
+    menu(id: $id, idType: $idType) {
+      id
+      databaseId
+      name
+      slug
+      menuItems(first: 100) {
+        nodes {
+          ...MenuItemFields
+        }
+      }
     }
   }
 `;
