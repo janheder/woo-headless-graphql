@@ -36,27 +36,34 @@
   });
 
   /**
+   * Normalize an attribute name by removing 'pa_' prefix and lowercasing.
+   */
+  function normalizeAttrName(name: string): string {
+    return name.toLowerCase().replace('pa_', '');
+  }
+
+  /**
    * Build a lookup map from normalized attribute name to value for a variation.
-   * This handles the fact that variation attribute names may differ from product attribute names.
+   * Also stores the raw attribute nodes for fallback matching.
    */
   function getVariationAttrMap(v: ProductVariation): Record<string, string> {
     const map: Record<string, string> = {};
     const vAttrs = v.attributes?.nodes || [];
     for (const va of vAttrs) {
-      // Try normalized name first, then normalized label
-      const key = normalizeAttrName(va.name) || normalizeAttrName(va.label || '');
-      if (key) {
-        map[key] = va.value;
+      // Store by normalized name
+      const normalized = normalizeAttrName(va.name);
+      if (normalized) {
+        map[normalized] = va.value;
+      }
+      // Also store by normalized label as fallback
+      if (va.label) {
+        const labelKey = normalizeAttrName(va.label);
+        if (labelKey && !map[labelKey]) {
+          map[labelKey] = va.value;
+        }
       }
     }
     return map;
-  }
-
-  /**
-   * Normalize an attribute name by removing 'pa_' prefix and lowercasing.
-   */
-  function normalizeAttrName(name: string): string {
-    return name.toLowerCase().replace('pa_', '');
   }
 
   /**
@@ -90,8 +97,7 @@
             value: value.toLowerCase()
           }));
 
-        // If nothing is selected (only this option), check if any variation has this option
-        // If other things are selected, check if any variation matches all
+        // Check if any variation matches all selected entries
         const isAvailable = variationMaps.some(vmap => {
           return selectedEntries.every(({ key, value }) =>
             vmap[key]?.toLowerCase() === value
