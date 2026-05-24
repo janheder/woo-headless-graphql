@@ -36,6 +36,23 @@
   });
 
   /**
+   * Build a lookup map from normalized attribute name to value for a variation.
+   * This handles the fact that variation attribute names may differ from product attribute names.
+   */
+  function getVariationAttrMap(v: ProductVariation): Record<string, string> {
+    const map: Record<string, string> = {};
+    const vAttrs = v.attributes?.nodes || [];
+    for (const va of vAttrs) {
+      // Try normalized name first, then normalized label
+      const key = normalizeAttrName(va.name) || normalizeAttrName(va.label || '');
+      if (key) {
+        map[key] = va.value;
+      }
+    }
+    return map;
+  }
+
+  /**
    * Normalize an attribute name by removing 'pa_' prefix and lowercasing.
    */
   function normalizeAttrName(name: string): string {
@@ -43,69 +60,61 @@
   }
 
   /**
-   * Check if a variation attribute node matches a given attribute name and value.
-   */
-  function variationAttrMatches(
-    va: { name: string; label?: string | null; value: string },
-    attrName: string,
-    attrValue: string
-  ): boolean {
-    const vaName = normalizeAttrName(va.name);
-    const vaLabel = normalizeAttrName(va.label || '');
-    const checkName = normalizeAttrName(attrName);
-    return (vaName === checkName || vaLabel === checkName) && va.value === attrValue;
-  }
-
-  /**
-   * Check if a variation matches a given set of attribute selections.
-   * Unselected attributes (empty string) are ignored.
-   */
-  function variationMatchesSelection(
-    v: ProductVariation,
-    selections: Record<string, string>
-  ): boolean {
-    const vAttrs = v.attributes?.nodes || [];
-    return Object.entries(selections)
-      .filter(([, value]) => value !== '')
-      .every(([name, value]) =>
-        vAttrs.some(va => variationAttrMatches(va, name, value))
-      );
-  }
-
-  /**
    * Compute which options are available for each attribute given current selections.
    * An option is available if there exists at least one variation matching
    * the current selections plus this option.
+   * When nothing is selected yet, all options are available.
    */
-  let optionAvailability: Record<string, Record<string, boolean>> = $derived.by(() => {
+  let optionAvailability: Record<string, Record<string, boolean>> = $state({});
+
+  $effect(() => {
     const result: Record<string, Record<string, boolean>> = {};
     const variationAttrs = attributes.filter(a => a.variation);
 
+    // Pre-build variation attribute maps for performance
+    const variationMaps = variations.map(v => getVariationAttrMap(v));
+
     for (const attr of variationAttrs) {
       result[attr.name] = {};
+      const attrKey = normalizeAttrName(attr.name);
+
       for (const option of attr.options) {
         // Build candidate: current selections + this option for this attribute
         const candidate = { ...selectedAttributes, [attr.name]: option };
 
-        // Check if any variation matches the candidate
-        const isAvailable = variations.some(v =>
-          variationMatchesSelection(v, candidate)
-        );
+        // Get the set of non-empty selections from candidate
+        const selectedEntries = Object.entries(candidate)
+          .filter(([, value]) => value !== '')
+          .map(([name, value]) => ({
+            key: normalizeAttrName(name),
+            value: value.toLowerCase()
+          }));
+
+        // If nothing is selected (only this option), check if any variation has this option
+        // If other things are selected, check if any variation matches all
+        const isAvailable = variationMaps.some(vmap => {
+          return selectedEntries.every(({ key, value }) =>
+            vmap[key]?.toLowerCase() === value
+          );
+        });
 
         result[attr.name][option] = isAvailable;
       }
     }
 
-    return result;
+    optionAvailability = result;
   });
 
   // Find matching variation when attributes change
   $effect(() => {
-    const selectedValues = Object.entries(selectedAttributes)
+    const selectedEntries = Object.entries(selectedAttributes)
       .filter(([, value]) => value !== '')
-      .map(([name, value]) => ({ name, value }));
+      .map(([name, value]) => ({
+        key: normalizeAttrName(name),
+        value: value.toLowerCase()
+      }));
 
-    if (selectedValues.length === 0) {
+    if (selectedEntries.length === 0) {
       selectedVariation = null;
       return;
     }
@@ -121,10 +130,10 @@
 
     // Find the variation that matches all selected attributes
     const match = variations.find(v => {
-      const vAttrs = v.attributes?.nodes || [];
-      return selectedValues.every(sv => {
-        return vAttrs.some(va => variationAttrMatches(va, sv.name, sv.value));
-      });
+      const vmap = getVariationAttrMap(v);
+      return selectedEntries.every(({ key, value }) =>
+        vmap[key]?.toLowerCase() === value
+      );
     });
 
     selectedVariation = match || null;
@@ -266,6 +275,11 @@
   <button class="reset_variations" onclick={resetSelections} type="button">
     Vyčistit
   </button>
+
+  <!-- SKU Display -->
+  <div class="sku_wrapper">
+    SKU: <span class="sku" data-o_content={selectedVariation?.sku || ''}>{selectedVariation?.sku || ''}</span>
+  </div>
 
   <!-- Price Display -->
   <div class="variation-price">
@@ -425,6 +439,16 @@
 
   .reset_variations:hover {
     color: var(--color-primary);
+  }
+
+  .sku_wrapper {
+    font-size: 1.4rem;
+    color: var(--color-text-muted);
+  }
+
+  .sku_wrapper .sku {
+    font-weight: 600;
+    color: var(--color-text);
   }
 
   .variation-price {
