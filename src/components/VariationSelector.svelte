@@ -26,6 +26,11 @@
   let isAdding: boolean = $state(false);
   let errorMessage: string | null = $state(null);
 
+  // Derive the list of variation attribute names (normalized)
+  let variationAttrNames: string[] = $derived(
+    attributes.filter(a => a.variation).map(a => a.name)
+  );
+
   // Initialize selected attributes with empty strings
   $effect(() => {
     const initial: Record<string, string> = {};
@@ -33,6 +38,59 @@
       initial[attr.name] = '';
     }
     selectedAttributes = initial;
+  });
+
+  /**
+   * Normalize an attribute name by removing 'pa_' prefix and lowercasing.
+   */
+  function normalizeAttrName(name: string): string {
+    return name.toLowerCase().replace('pa_', '');
+  }
+
+  /**
+   * Check if a variation attribute node matches a given attribute name and value.
+   * Handles both full taxonomy names (pa_color) and short names (color).
+   */
+  function variationAttrMatches(
+    va: { name: string; label?: string | null; value: string },
+    attrName: string,
+    attrValue: string
+  ): boolean {
+    const vaName = normalizeAttrName(va.name);
+    const vaLabel = normalizeAttrName(va.label || '');
+    const checkName = normalizeAttrName(attrName);
+    return (vaName === checkName || vaLabel === checkName) && va.value === attrValue;
+  }
+
+  /**
+   * Compute which options are available for each attribute given current selections.
+   * An option is available if there exists at least one variation matching
+   * the current selections plus this option.
+   */
+  let optionAvailability: Record<string, Record<string, boolean>> = $derived.by(() => {
+    const result: Record<string, Record<string, boolean>> = {};
+
+    for (const attr of attributes.filter(a => a.variation)) {
+      result[attr.name] = {};
+      for (const option of attr.options) {
+        // Build candidate selection: current selections + this option for this attribute
+        const candidate = { ...selectedAttributes, [attr.name]: option };
+
+        // Check if any variation matches the candidate
+        const isAvailable = variations.some(v => {
+          const vAttrs = v.attributes?.nodes || [];
+          return variationAttrNames.every(van => {
+            const desiredValue = candidate[van];
+            if (!desiredValue) return true; // not yet selected, skip
+            return vAttrs.some(va => variationAttrMatches(va, van, desiredValue));
+          });
+        });
+
+        result[attr.name][option] = isAvailable;
+      }
+    }
+
+    return result;
   });
 
   // Find matching variation when attributes change
@@ -47,8 +105,7 @@
     }
 
     // Check if all variation attributes are selected
-    const variationAttrs = attributes.filter(a => a.variation);
-    const allSelected = variationAttrs.every(attr => selectedAttributes[attr.name] !== '');
+    const allSelected = variationAttrNames.every(name => selectedAttributes[name] !== '');
 
     if (!allSelected) {
       selectedVariation = null;
@@ -59,7 +116,7 @@
     const match = variations.find(v => {
       const vAttrs = v.attributes?.nodes || [];
       return selectedValues.every(sv => {
-        return vAttrs.some(va => va.name === sv.name && va.value === sv.value);
+        return vAttrs.some(va => variationAttrMatches(va, sv.name, sv.value));
       });
     });
 
@@ -128,35 +185,6 @@
     errorMessage = null;
   }
 
-  /**
-   * Check if a specific attribute option is available given current selections.
-   * An option is available if there exists at least one variation matching
-   * the current selections plus this option.
-   */
-  function isOptionAvailable(
-    attrName: string,
-    optionValue: string,
-    currentSelections: Record<string, string>
-  ): boolean {
-    // Build a candidate selection set
-    const candidate = { ...currentSelections, [attrName]: optionValue };
-
-    // Get all variation attribute names
-    const variationAttrNames = attributes
-      .filter(a => a.variation)
-      .map(a => a.name);
-
-    // Check if there's a variation matching the candidate
-    return variations.some(v => {
-      const vAttrs = v.attributes?.nodes || [];
-      return variationAttrNames.every(attrName => {
-        const desiredValue = candidate[attrName];
-        if (!desiredValue) return true; // not yet selected, skip check
-        return vAttrs.some(va => va.name === attrName && va.value === desiredValue);
-      });
-    });
-  }
-
   // Add to cart
   async function handleAddToCart() {
     if (!allAttributesSelected()) {
@@ -212,11 +240,11 @@
             >
               <option value="">Vyberte možnost</option>
               {#each attr.options as option}
-                {@const isAvailable = isOptionAvailable(attr.name, option, selectedAttributes)}
+                {@const isAvail = optionAvailability[attr.name]?.[option] ?? true}
                 <option
                   value={option}
-                  disabled={!isAvailable}
-                  class={isAvailable ? 'attached enabled' : 'attached disabled'}
+                  disabled={!isAvail}
+                  class={isAvail ? 'attached enabled' : 'attached disabled'}
                 >
                   {option}
                 </option>
