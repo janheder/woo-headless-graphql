@@ -26,6 +26,13 @@
   let isAdding: boolean = $state(false);
   let errorMessage: string | null = $state(null);
 
+  /**
+   * Normalize an attribute name by removing 'pa_' prefix and lowercasing.
+   */
+  function normalizeAttrName(name: string): string {
+    return name.toLowerCase().replace('pa_', '');
+  }
+
   // Initialize selected attributes with empty strings
   $effect(() => {
     const initial: Record<string, string> = {};
@@ -36,17 +43,7 @@
   });
 
   /**
-   * Normalize an attribute name by removing 'pa_' prefix and lowercasing.
-   */
-  function normalizeAttrName(name: string): string {
-    return name.toLowerCase().replace('pa_', '');
-  }
-
-  /**
    * Compute which options are available for each attribute given current selections.
-   * An option is available if there exists at least one variation matching
-   * the current selections plus this option.
-   * When nothing is selected yet, all options are available.
    */
   let optionAvailability: Record<string, Record<string, boolean>> = $state({});
 
@@ -54,19 +51,16 @@
     const result: Record<string, Record<string, boolean>> = {};
     const variationAttrs = attributes.filter(a => a.variation);
 
-    // Build a lookup: for each variation, create a map of attrName -> value
-    // using the variation's attribute nodes
+    // Build variation data maps (normalized attr name -> value)
     const variationData = variations.map(v => {
       const attrs = v.attributes?.nodes || [];
       const map: Record<string, string> = {};
       for (const va of attrs) {
-        // Try to match by normalized name first
         const key = normalizeAttrName(va.name);
         if (key) map[key] = va.value;
-        // Also try label
         if (va.label) {
           const labelKey = normalizeAttrName(va.label);
-          if (labelKey) map[labelKey] = va.value;
+          if (labelKey && !(labelKey in map)) map[labelKey] = va.value;
         }
       }
       return map;
@@ -74,25 +68,30 @@
 
     for (const attr of variationAttrs) {
       result[attr.name] = {};
-      const normalizedAttrName = normalizeAttrName(attr.name);
-
       for (const option of attr.options) {
-        // Build candidate: current selections + this option for this attribute
-        const candidate = { ...selectedAttributes, [attr.name]: option };
-
-        // Get non-empty selections from candidate, normalized
+        // Build checks from already-selected attributes (excluding current attr)
         const checks: { key: string; val: string }[] = [];
-        for (const [name, value] of Object.entries(candidate)) {
-          if (value !== '') {
+        for (const [name, value] of Object.entries(selectedAttributes)) {
+          if (name !== attr.name && value !== '') {
             checks.push({ key: normalizeAttrName(name), val: value.toLowerCase() });
           }
         }
 
-        // Check if any variation matches all required checks
-        const isAvailable = variationData.some(vmap =>
-          checks.every(c => vmap[c.key]?.toLowerCase() === c.val)
-        );
+        // If no other attributes are selected yet, all options are available
+        if (checks.length === 0) {
+          result[attr.name][option] = true;
+          continue;
+        }
 
+        // Check if there's any variation matching the already-selected attributes
+        // combined with this option
+        const isAvailable = variationData.some(vmap => {
+          const attrKey = normalizeAttrName(attr.name);
+          return (
+            vmap[attrKey]?.toLowerCase() === option.toLowerCase() &&
+            checks.every(c => vmap[c.key]?.toLowerCase() === c.val)
+          );
+        });
         result[attr.name][option] = isAvailable;
       }
     }
