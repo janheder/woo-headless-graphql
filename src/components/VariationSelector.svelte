@@ -26,11 +26,6 @@
   let isAdding: boolean = $state(false);
   let errorMessage: string | null = $state(null);
 
-  // Derive the list of variation attribute names (normalized)
-  let variationAttrNames: string[] = $derived(
-    attributes.filter(a => a.variation).map(a => a.name)
-  );
-
   // Initialize selected attributes with empty strings
   $effect(() => {
     const initial: Record<string, string> = {};
@@ -49,7 +44,6 @@
 
   /**
    * Check if a variation attribute node matches a given attribute name and value.
-   * Handles both full taxonomy names (pa_color) and short names (color).
    */
   function variationAttrMatches(
     va: { name: string; label?: string | null; value: string },
@@ -63,28 +57,40 @@
   }
 
   /**
+   * Check if a variation matches a given set of attribute selections.
+   * Unselected attributes (empty string) are ignored.
+   */
+  function variationMatchesSelection(
+    v: ProductVariation,
+    selections: Record<string, string>
+  ): boolean {
+    const vAttrs = v.attributes?.nodes || [];
+    return Object.entries(selections)
+      .filter(([, value]) => value !== '')
+      .every(([name, value]) =>
+        vAttrs.some(va => variationAttrMatches(va, name, value))
+      );
+  }
+
+  /**
    * Compute which options are available for each attribute given current selections.
    * An option is available if there exists at least one variation matching
    * the current selections plus this option.
    */
   let optionAvailability: Record<string, Record<string, boolean>> = $derived.by(() => {
     const result: Record<string, Record<string, boolean>> = {};
+    const variationAttrs = attributes.filter(a => a.variation);
 
-    for (const attr of attributes.filter(a => a.variation)) {
+    for (const attr of variationAttrs) {
       result[attr.name] = {};
       for (const option of attr.options) {
-        // Build candidate selection: current selections + this option for this attribute
+        // Build candidate: current selections + this option for this attribute
         const candidate = { ...selectedAttributes, [attr.name]: option };
 
         // Check if any variation matches the candidate
-        const isAvailable = variations.some(v => {
-          const vAttrs = v.attributes?.nodes || [];
-          return variationAttrNames.every(van => {
-            const desiredValue = candidate[van];
-            if (!desiredValue) return true; // not yet selected, skip
-            return vAttrs.some(va => variationAttrMatches(va, van, desiredValue));
-          });
-        });
+        const isAvailable = variations.some(v =>
+          variationMatchesSelection(v, candidate)
+        );
 
         result[attr.name][option] = isAvailable;
       }
@@ -105,7 +111,8 @@
     }
 
     // Check if all variation attributes are selected
-    const allSelected = variationAttrNames.every(name => selectedAttributes[name] !== '');
+    const variationAttrs = attributes.filter(a => a.variation);
+    const allSelected = variationAttrs.every(attr => selectedAttributes[attr.name] !== '');
 
     if (!allSelected) {
       selectedVariation = null;
