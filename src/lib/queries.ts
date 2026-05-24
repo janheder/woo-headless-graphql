@@ -137,6 +137,9 @@ export const PRODUCT_FRAGMENT = `
 
 /**
  * GraphQL Fragment for WooCommerce Product Category fields.
+ * NOTE: `count` field only returns directly assigned products (not subcategory products).
+ * For accurate total count including subcategories, use the `products` connection
+ * with `pageInfo.offsetPagination.total` from the `CategoryWithProducts` fragment.
  */
 export const CATEGORY_FRAGMENT = `
   fragment CategoryFields on ProductCategory {
@@ -147,6 +150,29 @@ export const CATEGORY_FRAGMENT = `
     count
     image {
       ...ImageFields
+    }
+  }
+`;
+
+/**
+ * GraphQL Fragment for Product Category with accurate product count
+ * including products from child subcategories.
+ */
+export const CATEGORY_WITH_COUNT_FRAGMENT = `
+  fragment CategoryWithCountFields on ProductCategory {
+    id
+    databaseId
+    name
+    slug
+    image {
+      ...ImageFields
+    }
+    products(first: 0) {
+      pageInfo {
+        offsetPagination {
+          total
+        }
+      }
     }
   }
 `;
@@ -167,15 +193,16 @@ export const GET_PRODUCTS = `
 `;
 
 /**
- * Query to fetch a list of product categories.
+ * Query to fetch a list of product categories with accurate product counts
+ * (including products from child subcategories via offsetPagination.total).
  */
 export const GET_CATEGORIES = `
   ${IMAGE_FRAGMENT}
-  ${CATEGORY_FRAGMENT}
+  ${CATEGORY_WITH_COUNT_FRAGMENT}
   query GetCategories($first: Int = 20) {
     productCategories(first: $first) {
       nodes {
-        ...CategoryFields
+        ...CategoryWithCountFields
       }
     }
   }

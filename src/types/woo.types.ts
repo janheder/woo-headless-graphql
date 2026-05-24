@@ -16,6 +16,14 @@ export interface Category {
   slug: string;
   image?: WooImage | null;
   count?: number | null;
+  /** Products connection with pagination info for accurate total count including subcategories */
+  products?: {
+    pageInfo: {
+      offsetPagination: {
+        total: number;
+      };
+    };
+  } | null;
 }
 
 /**

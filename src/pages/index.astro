@@ -4,7 +4,7 @@ import Hero from '../components/Hero.astro';
 import ProductCard from '../components/ProductCard.astro';
 import { fetchGQL } from '../lib/fetch-gql';
 import { GET_PRODUCTS, GET_CATEGORIES } from '../lib/queries';
-import type { GetProductsResponse, GetCategoriesResponse } from '../types/woo.types';
+import type { GetProductsResponse, GetCategoriesResponse, Category } from '../types/woo.types';
 import { rewriteAssetUrl } from '../lib/utils';
 
 // Fetch live products and categories from WooCommerce via WPGraphQL
@@ -15,6 +15,24 @@ const [productsData, categoriesData] = await Promise.all([
 
 const products = productsData?.products?.nodes || [];
 const categories = categoriesData?.productCategories?.nodes || [];
+
+/**
+ * Get the accurate product count for a category, including products from child subcategories.
+ * Uses offsetPagination.total from the products connection (more accurate than `category.count`
+ * which only counts directly assigned products).
+ */
+function getCategoryCount(category: Category): number {
+  return category.products?.pageInfo?.offsetPagination?.total ?? category.count ?? 0;
+}
+
+/**
+ * Format the product count with correct Czech pluralization.
+ */
+function formatCount(count: number): string {
+  if (count === 1) return '1 produkt';
+  if (count >= 2 && count <= 4) return `${count} produkty`;
+  return `${count} produktů`;
+}
 ---
 
 <Layout title="Headless WooCommerce | Úvod" description="Moderní, rychlý headless e-shop běžící na Astro, Svelte a WooCommerce rozhraní.">
@@ -33,6 +51,7 @@ const categories = categoriesData?.productCategories?.nodes || [];
           <div class="category-grid">
             {categories.map(category => {
               const catImage = category.image?.sourceUrl ? rewriteAssetUrl(category.image.sourceUrl) : null;
+              const catCount = getCategoryCount(category);
               return (
                 <a href={`/category/${category.slug}`} class="category-card">
                   <div class="category-image-wrapper">
@@ -44,7 +63,7 @@ const categories = categoriesData?.productCategories?.nodes || [];
                   </div>
                   <div class="category-content">
                     <span class="category-name">{category.name}</span>
-                    <span class="category-count">{category.count || 0} produktů</span>
+                    <span class="category-count">{formatCount(catCount)}</span>
                   </div>
                 </a>
               );
