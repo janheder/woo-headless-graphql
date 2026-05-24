@@ -43,30 +43,6 @@
   }
 
   /**
-   * Build a lookup map from normalized attribute name to value for a variation.
-   * Also stores the raw attribute nodes for fallback matching.
-   */
-  function getVariationAttrMap(v: ProductVariation): Record<string, string> {
-    const map: Record<string, string> = {};
-    const vAttrs = v.attributes?.nodes || [];
-    for (const va of vAttrs) {
-      // Store by normalized name
-      const normalized = normalizeAttrName(va.name);
-      if (normalized) {
-        map[normalized] = va.value;
-      }
-      // Also store by normalized label as fallback
-      if (va.label) {
-        const labelKey = normalizeAttrName(va.label);
-        if (labelKey && !map[labelKey]) {
-          map[labelKey] = va.value;
-        }
-      }
-    }
-    return map;
-  }
-
-  /**
    * Compute which options are available for each attribute given current selections.
    * An option is available if there exists at least one variation matching
    * the current selections plus this option.
@@ -78,31 +54,44 @@
     const result: Record<string, Record<string, boolean>> = {};
     const variationAttrs = attributes.filter(a => a.variation);
 
-    // Pre-build variation attribute maps for performance
-    const variationMaps = variations.map(v => getVariationAttrMap(v));
+    // Build a lookup: for each variation, create a map of attrName -> value
+    // using the variation's attribute nodes
+    const variationData = variations.map(v => {
+      const attrs = v.attributes?.nodes || [];
+      const map: Record<string, string> = {};
+      for (const va of attrs) {
+        // Try to match by normalized name first
+        const key = normalizeAttrName(va.name);
+        if (key) map[key] = va.value;
+        // Also try label
+        if (va.label) {
+          const labelKey = normalizeAttrName(va.label);
+          if (labelKey) map[labelKey] = va.value;
+        }
+      }
+      return map;
+    });
 
     for (const attr of variationAttrs) {
       result[attr.name] = {};
-      const attrKey = normalizeAttrName(attr.name);
+      const normalizedAttrName = normalizeAttrName(attr.name);
 
       for (const option of attr.options) {
         // Build candidate: current selections + this option for this attribute
         const candidate = { ...selectedAttributes, [attr.name]: option };
 
-        // Get the set of non-empty selections from candidate
-        const selectedEntries = Object.entries(candidate)
-          .filter(([, value]) => value !== '')
-          .map(([name, value]) => ({
-            key: normalizeAttrName(name),
-            value: value.toLowerCase()
-          }));
+        // Get non-empty selections from candidate, normalized
+        const checks: { key: string; val: string }[] = [];
+        for (const [name, value] of Object.entries(candidate)) {
+          if (value !== '') {
+            checks.push({ key: normalizeAttrName(name), val: value.toLowerCase() });
+          }
+        }
 
-        // Check if any variation matches all selected entries
-        const isAvailable = variationMaps.some(vmap => {
-          return selectedEntries.every(({ key, value }) =>
-            vmap[key]?.toLowerCase() === value
-          );
-        });
+        // Check if any variation matches all required checks
+        const isAvailable = variationData.some(vmap =>
+          checks.every(c => vmap[c.key]?.toLowerCase() === c.val)
+        );
 
         result[attr.name][option] = isAvailable;
       }
@@ -136,7 +125,16 @@
 
     // Find the variation that matches all selected attributes
     const match = variations.find(v => {
-      const vmap = getVariationAttrMap(v);
+      const vAttrs = v.attributes?.nodes || [];
+      const vmap: Record<string, string> = {};
+      for (const va of vAttrs) {
+        const k = normalizeAttrName(va.name);
+        if (k) vmap[k] = va.value;
+        if (va.label) {
+          const lk = normalizeAttrName(va.label);
+          if (lk) vmap[lk] = va.value;
+        }
+      }
       return selectedEntries.every(({ key, value }) =>
         vmap[key]?.toLowerCase() === value
       );
