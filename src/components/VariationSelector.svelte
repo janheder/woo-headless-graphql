@@ -84,12 +84,16 @@
         }
 
         // Check if there's any variation matching the already-selected attributes
-        // combined with this option
+        // combined with this option.
+        // A variation matches if:
+        //   - its value equals the option, OR
+        //   - its value is "" (empty string = "Any..." in WooCommerce, meaning all options are valid)
         const isAvailable = variationData.some(vmap => {
           const attrKey = normalizeAttrName(attr.name);
+          const vAttrValue = vmap[attrKey]?.toLowerCase() || '';
           return (
-            vmap[attrKey]?.toLowerCase() === option.toLowerCase() &&
-            checks.every(c => vmap[c.key]?.toLowerCase() === c.val)
+            (vAttrValue === option.toLowerCase() || vAttrValue === '') &&
+            checks.every(c => (vmap[c.key]?.toLowerCase() || '') === c.val || (vmap[c.key] || '') === '')
           );
         });
         result[attr.name][option] = isAvailable;
@@ -122,7 +126,10 @@
       return;
     }
 
-    // Find the variation that matches all selected attributes
+    // Find the variation that matches all selected attributes.
+    // A variation matches if:
+    //   - its value equals the selected value, OR
+    //   - its value is "" (empty string = "Any..." in WooCommerce)
     const match = variations.find(v => {
       const vAttrs = v.attributes?.nodes || [];
       const vmap: Record<string, string> = {};
@@ -134,9 +141,10 @@
           if (lk) vmap[lk] = va.value;
         }
       }
-      return selectedEntries.every(({ key, value }) =>
-        vmap[key]?.toLowerCase() === value
-      );
+      return selectedEntries.every(({ key, value }) => {
+        const vAttrValue = vmap[key]?.toLowerCase() || '';
+        return vAttrValue === value || vAttrValue === '';
+      });
     });
 
     selectedVariation = match || null;
