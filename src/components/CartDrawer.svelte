@@ -2,6 +2,33 @@
   import { cart } from "../stores/cart.svelte";
   import { rewriteAssetUrl, formatPrice } from "../lib/utils";
   import { fade, slide } from "svelte/transition";
+  import type { CartItem } from "../types/woo.types";
+
+  /**
+   * Get the variation attribute label for display (e.g., "Color: Red").
+   */
+  function getVariationLabel(item: CartItem): string | null {
+    const attrs = item.variation?.node?.attributes?.nodes;
+    if (!attrs || attrs.length === 0) return null;
+    return attrs
+      .map(a => `${a.label || a.name}: ${a.value}`)
+      .join(', ');
+  }
+
+  /**
+   * Get the effective price info for a cart item, considering variations.
+   */
+  function getItemPriceInfo(item: CartItem) {
+    const variation = item.variation?.node;
+    const hasSale = variation
+      ? !!(variation.onSale && variation.salePrice)
+      : !!(item.product.node.onSale && item.product.node.regularPrice);
+    const regularPrice = variation ? variation.regularPrice : item.product.node.regularPrice;
+    const currentPrice = variation
+      ? (variation.onSale && variation.salePrice ? variation.salePrice : variation.price)
+      : item.product.node.price;
+    return { hasSale, regularPrice, currentPrice };
+  }
 
   // Svelte 5 effect to manage page scroll lock when drawer is active
   $effect(() => {
@@ -101,10 +128,11 @@
               <div class="cart-item" out:slide|local={{ duration: 200 }}>
                 <!-- Product Image -->
                 <div class="item-image-wrapper">
-                  {#if item.product.node.image?.sourceUrl}
+                  {#if item.variation?.node?.image?.sourceUrl || item.product.node.image?.sourceUrl}
+                    {@const imgSrc = item.variation?.node?.image?.sourceUrl || item.product.node.image?.sourceUrl}
                     <img
-                      src={rewriteAssetUrl(item.product.node.image.sourceUrl)}
-                      alt={item.product.node.image.altText ||
+                      src={rewriteAssetUrl(imgSrc)}
+                      alt={item.product.node.image?.altText ||
                         item.product.node.name}
                       class="item-image"
                     />
@@ -123,6 +151,11 @@
                     >
                       {item.product.node.name}
                     </a>
+                    {#if item.variation?.node?.attributes?.nodes?.length}
+                      <span class="item-variation-label">
+                        {getVariationLabel(item)}
+                      </span>
+                    {/if}
                     <button
                       class="remove-button"
                       onclick={() => removeItem(item.key)}
@@ -171,13 +204,13 @@
 
                     <!-- Price Box (Single and Subtotal) -->
                     <div class="price-display">
-                      {#if item.product.node.onSale && item.product.node.regularPrice}
+                      {#if getItemPriceInfo(item).hasSale && getItemPriceInfo(item).regularPrice}
                         <span class="price-old"
-                          >{formatPrice(item.product.node.regularPrice)}</span
+                          >{formatPrice(getItemPriceInfo(item).regularPrice)}</span
                         >
                       {/if}
                       <span class="price-current"
-                        >{formatPrice(item.product.node.price)}</span
+                        >{formatPrice(getItemPriceInfo(item).currentPrice)}</span
                       >
                     </div>
                   </div>
@@ -377,6 +410,14 @@
 
   .item-name:hover {
     color: var(--color-primary);
+  }
+
+  .item-variation-label {
+    display: block;
+    font-size: 1.2rem;
+    color: var(--color-text-muted);
+    margin-top: 0.2rem;
+    line-height: 1.4;
   }
 
   .remove-button {

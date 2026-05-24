@@ -111,6 +111,42 @@ export const PRODUCT_FRAGMENT = `
       regularPrice
       salePrice
       onSale
+      attributes {
+        nodes {
+          id
+          attributeId
+          name
+          label
+          options
+          variation
+          visible
+        }
+      }
+      variations(first: 100) {
+        nodes {
+          id
+          databaseId
+          name
+          price
+          regularPrice
+          salePrice
+          onSale
+          sku
+          stockStatus
+          image {
+            ...ImageFields
+          }
+          attributes {
+            nodes {
+              id
+              attributeId
+              name
+              label
+              value
+            }
+          }
+        }
+      }
     }
     ... on GroupProduct {
       price
@@ -128,6 +164,39 @@ export const PRODUCT_FRAGMENT = `
             image {
               ...ImageFields
             }
+          }
+        }
+      }
+    }
+  }
+`;
+
+/**
+ * GraphQL Fragment for variation data on cart items.
+ */
+export const VARIATION_CART_FRAGMENT = `
+  fragment VariationCartFields on CartItem {
+    variation {
+      node {
+        id
+        databaseId
+        name
+        price
+        regularPrice
+        salePrice
+        onSale
+        sku
+        stockStatus
+        image {
+          ...ImageFields
+        }
+        attributes {
+          nodes {
+            id
+            attributeId
+            name
+            label
+            value
           }
         }
       }
@@ -266,6 +335,7 @@ export const GET_CATEGORY_WITH_PRODUCTS = `
 export const GET_CART = `
   ${IMAGE_FRAGMENT}
   ${PRODUCT_FRAGMENT}
+  ${VARIATION_CART_FRAGMENT}
   query GetCart {
     cart {
       contents(first: 100) {
@@ -279,6 +349,7 @@ export const GET_CART = `
           quantity
           subtotal
           total
+          ...VariationCartFields
         }
       }
       subtotal
@@ -293,6 +364,7 @@ export const GET_CART = `
 export const ADD_TO_CART = `
   ${IMAGE_FRAGMENT}
   ${PRODUCT_FRAGMENT}
+  ${VARIATION_CART_FRAGMENT}
   mutation AddToCart($productId: Int!, $quantity: Int = 1) {
     addToCart(input: { productId: $productId, quantity: $quantity }) {
       cart {
@@ -307,6 +379,38 @@ export const ADD_TO_CART = `
             quantity
             subtotal
             total
+            ...VariationCartFields
+          }
+        }
+        subtotal
+        total
+      }
+    }
+  }
+`;
+
+/**
+ * Mutation to add a product variation to the WooCommerce cart.
+ */
+export const ADD_VARIATION_TO_CART = `
+  ${IMAGE_FRAGMENT}
+  ${PRODUCT_FRAGMENT}
+  ${VARIATION_CART_FRAGMENT}
+  mutation AddVariationToCart($productId: Int!, $variationId: Int!, $quantity: Int = 1) {
+    addToCart(input: { productId: $productId, variationId: $variationId, quantity: $quantity }) {
+      cart {
+        contents(first: 100) {
+          nodes {
+            key
+            product {
+              node {
+                ...ProductFields
+              }
+            }
+            quantity
+            subtotal
+            total
+            ...VariationCartFields
           }
         }
         subtotal
@@ -322,6 +426,7 @@ export const ADD_TO_CART = `
 export const UPDATE_CART_QUANTITY = `
   ${IMAGE_FRAGMENT}
   ${PRODUCT_FRAGMENT}
+  ${VARIATION_CART_FRAGMENT}
   mutation UpdateCartQuantity($key: ID!, $quantity: Int!) {
     updateItemQuantities(input: { items: [{ key: $key, quantity: $quantity }] }) {
       cart {
@@ -336,6 +441,7 @@ export const UPDATE_CART_QUANTITY = `
             quantity
             subtotal
             total
+            ...VariationCartFields
           }
         }
         subtotal

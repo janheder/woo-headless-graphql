@@ -1,12 +1,12 @@
 import { client } from '../lib/wp-client';
-import { GET_CART, ADD_TO_CART, UPDATE_CART_QUANTITY } from '../lib/queries';
+import { GET_CART, ADD_TO_CART, ADD_VARIATION_TO_CART, UPDATE_CART_QUANTITY } from '../lib/queries';
 import { formatPrice } from '../lib/utils';
-import type { 
-  CartData, 
-  CartItem, 
-  GetCartResponse, 
-  AddToCartResponse, 
-  UpdateCartQuantityResponse 
+import type {
+  CartData,
+  CartItem,
+  GetCartResponse,
+  AddToCartResponse,
+  UpdateCartQuantityResponse
 } from '../types/woo.types';
 
 class CartStore {
@@ -104,6 +104,35 @@ class CartStore {
     } catch (e: any) {
       this.error = e?.message || 'Chyba při přidávání do košíku';
       console.error('[Cart Store] Exception adding to cart:', e);
+    } finally {
+      this.loading = false;
+    }
+  }
+
+  // Add a product variation to the WooCommerce cart
+  async addVariationToCart(productId: number, variationId: number, quantity: number = 1) {
+    this.loading = true;
+    this.error = null;
+    this.isOpen = true;
+
+    try {
+      const response = await client.mutation<
+        { addToCart: { cart: CartData } },
+        { productId: number; variationId: number; quantity: number }
+      >(
+        ADD_VARIATION_TO_CART,
+        { productId, variationId, quantity }
+      ).toPromise();
+
+      if (response.error) {
+        this.error = response.error.message;
+        console.error('[Cart Store] Add variation to cart error:', response.error);
+      } else {
+        this.updateState(response.data?.addToCart?.cart);
+      }
+    } catch (e: any) {
+      this.error = e?.message || 'Chyba při přidávání varianty do košíku';
+      console.error('[Cart Store] Exception adding variation to cart:', e);
     } finally {
       this.loading = false;
     }

@@ -52,6 +52,57 @@ export interface Product {
   products?: {
     nodes: GroupedChildProduct[];
   } | null;
+  /** VariableProduct attributes (only populated when __typename === 'VariableProduct') */
+  attributes?: {
+    nodes: ProductAttribute[];
+  } | null;
+  /** VariableProduct variations (only populated when __typename === 'VariableProduct') */
+  variations?: {
+    nodes: ProductVariation[];
+  } | null;
+}
+
+/**
+ * A product attribute (taxonomy or custom) used for variations.
+ */
+export interface ProductAttribute {
+  id: string;
+  attributeId: number;
+  name: string;
+  label: string;
+  options: string[];
+  variation: boolean;
+  visible: boolean;
+}
+
+/**
+ * A single product variation with pricing and stock status.
+ */
+export interface ProductVariation {
+  id: string;
+  databaseId: number;
+  name: string;
+  price?: string | null;
+  regularPrice?: string | null;
+  salePrice?: string | null;
+  onSale?: boolean | null;
+  image?: WooImage | null;
+  sku?: string | null;
+  stockStatus?: string | null;
+  attributes?: {
+    nodes: VariationAttribute[];
+  } | null;
+}
+
+/**
+ * A variation attribute value (e.g., Color: Red).
+ */
+export interface VariationAttribute {
+  id: string;
+  attributeId: number;
+  name: string;
+  label: string;
+  value: string;
 }
 
 /**
@@ -128,6 +179,10 @@ export interface CartItem {
   quantity: number;
   subtotal?: string | null;
   total?: string | null;
+  /** Variation node if this cart item is a product variation */
+  variation?: {
+    node: ProductVariation;
+  } | null;
 }
 
 export interface CartData {

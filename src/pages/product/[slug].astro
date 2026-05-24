@@ -1,9 +1,10 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import VariationSelector from '../../components/VariationSelector.svelte';
 import { fetchGQL } from '../../lib/fetch-gql';
 import { GET_PRODUCTS, GET_PRODUCT_BY_SLUG } from '../../lib/queries';
-import type { GetProductsResponse, GetProductBySlugResponse, GroupedChildProduct } from '../../types/woo.types';
+import type { GetProductsResponse, GetProductBySlugResponse, GroupedChildProduct, ProductAttribute, ProductVariation } from '../../types/woo.types';
 import { formatPrice, rewriteAssetUrl } from '../../lib/utils';
 
 // Pre-render static paths for all products
@@ -132,10 +133,15 @@ breadcrumbItems.push({ label: product.name });
 
         <!-- Actions / Add to Cart -->
         <div class="buy-section">
-          {isVariableProduct && (
-            <p class="variation-note">
-              Tento produkt má varianty. Výběr variant zatím není v headless košíku dostupný.
-            </p>
+          {isVariableProduct && product.attributes && product.variations && (
+            <VariationSelector
+              productId={product.databaseId}
+              productName={product.name}
+              attributes={product.attributes.nodes as ProductAttribute[]}
+              variations={product.variations.nodes as ProductVariation[]}
+              defaultImage={mainImageSrc}
+              client:load
+            />
           )}
           {isGroupedProduct && (
             <form class="cart grouped_form" action="" method="post" enctype="multipart/form-data">
