@@ -110,8 +110,9 @@ class CartStore {
   }
 
   // Add a product variation to the WooCommerce cart
+  // Uses the variation's databaseId as productId, and passes selected attributes
+  // as ProductAttributeInput array. This handles "Any..." attributes correctly.
   async addVariationToCart(
-    productId: number,
     variationId: number,
     quantity: number = 1,
     attributes?: { attributeName: string; attributeValue: string }[]
@@ -120,25 +121,29 @@ class CartStore {
     this.error = null;
     this.isOpen = true;
 
-    // Build the variation attribute array with the variation ID included
-    const variation = attributes?.map(a => ({
-      id: variationId,
-      attributeName: a.attributeName,
-      attributeValue: a.attributeValue,
-    }));
+    // Build the AddToCartInput object
+    // productId is the variation's databaseId (not the parent product ID)
+    // variation array contains the explicitly selected attributes
+    const input: {
+      productId: number;
+      quantity: number;
+      variation?: { attributeName: string; attributeValue: string }[];
+    } = {
+      productId: variationId,
+      quantity,
+    };
+
+    if (attributes && attributes.length > 0) {
+      input.variation = attributes;
+    }
 
     try {
       const response = await client.mutation<
         { addToCart: { cart: CartData } },
-        {
-          productId: number;
-          variationId: number;
-          quantity: number;
-          variation?: { id: number; attributeName: string; attributeValue: string }[];
-        }
+        { input: typeof input }
       >(
         ADD_VARIATION_TO_CART,
-        { productId, variationId, quantity, variation }
+        { input }
       ).toPromise();
 
       if (response.error) {

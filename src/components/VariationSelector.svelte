@@ -240,7 +240,7 @@
 
     try {
       const cartAttributes = buildCartAttributes();
-      await cart.addVariationToCart(productId, selectedVariation.databaseId, quantity, cartAttributes);
+      await cart.addVariationToCart(selectedVariation.databaseId, quantity, cartAttributes);
     } catch (e: any) {
       errorMessage = e?.message || 'Chyba při přidávání do košíku.';
     } finally {
