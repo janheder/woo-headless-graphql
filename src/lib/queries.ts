@@ -391,20 +391,23 @@ export const ADD_TO_CART = `
 
 /**
  * Mutation to add a product variation to the WooCommerce cart.
- * The `attributes` input passes the attribute selections (e.g. size, color)
- * which are required by WooCommerce when the variation has "Any..." attributes.
- * WooGraphQL expects attributes at the top level of addToCart input, not nested inside variation.
+ * The `variation` input passes the attribute selections (e.g. size, color)
+ * as an array of VariationAttributeInput objects, each with:
+ *   - id: Int (the variation database ID)
+ *   - attributeName: String (e.g. "pa_color")
+ *   - attributeValue: String (e.g. "red")
+ * This is required by WooCommerce when the variation has "Any..." attributes.
  */
 export const ADD_VARIATION_TO_CART = `
   ${IMAGE_FRAGMENT}
   ${PRODUCT_FRAGMENT}
   ${VARIATION_CART_FRAGMENT}
-  mutation AddVariationToCart($productId: Int!, $variationId: Int!, $quantity: Int = 1, $attributes: [ProductAttributeInput]) {
+  mutation AddVariationToCart($productId: Int!, $variationId: Int!, $quantity: Int = 1, $variation: [VariationAttributeInput]) {
     addToCart(input: {
       productId: $productId,
       variationId: $variationId,
       quantity: $quantity,
-      attributes: $attributes
+      variation: $variation
     }) {
       cart {
         contents(first: 100) {

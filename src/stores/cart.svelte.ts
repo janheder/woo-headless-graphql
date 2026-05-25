@@ -120,6 +120,13 @@ class CartStore {
     this.error = null;
     this.isOpen = true;
 
+    // Build the variation attribute array with the variation ID included
+    const variation = attributes?.map(a => ({
+      id: variationId,
+      attributeName: a.attributeName,
+      attributeValue: a.attributeValue,
+    }));
+
     try {
       const response = await client.mutation<
         { addToCart: { cart: CartData } },
@@ -127,11 +134,11 @@ class CartStore {
           productId: number;
           variationId: number;
           quantity: number;
-          attributes?: { attributeName: string; attributeValue: string }[];
+          variation?: { id: number; attributeName: string; attributeValue: string }[];
         }
       >(
         ADD_VARIATION_TO_CART,
-        { productId, variationId, quantity, attributes }
+        { productId, variationId, quantity, variation }
       ).toPromise();
 
       if (response.error) {
