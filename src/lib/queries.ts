@@ -391,15 +391,19 @@ export const ADD_TO_CART = `
 
 /**
  * Mutation to add a product variation to the WooCommerce cart.
- * The `attributes` parameter passes variation attribute selections (e.g. size, color)
- * which are required by WooCommerce when the variation has custom attributes.
+ * The `variation` input passes the variation ID and its attribute selections (e.g. size, color)
+ * which are required by WooCommerce when the variation has "Any..." attributes.
  */
 export const ADD_VARIATION_TO_CART = `
   ${IMAGE_FRAGMENT}
   ${PRODUCT_FRAGMENT}
   ${VARIATION_CART_FRAGMENT}
   mutation AddVariationToCart($productId: Int!, $variationId: Int!, $quantity: Int = 1, $attributes: [ProductAttributeInput]) {
-    addToCart(input: { productId: $productId, variationId: $variationId, quantity: $quantity, attributes: $attributes }) {
+    addToCart(input: {
+      productId: $productId,
+      quantity: $quantity,
+      variation: [{ id: $variationId, attributes: $attributes }]
+    }) {
       cart {
         contents(first: 100) {
           nodes {
