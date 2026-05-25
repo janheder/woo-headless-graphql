@@ -110,7 +110,12 @@ class CartStore {
   }
 
   // Add a product variation to the WooCommerce cart
-  async addVariationToCart(productId: number, variationId: number, quantity: number = 1) {
+  async addVariationToCart(
+    productId: number,
+    variationId: number,
+    quantity: number = 1,
+    attributes?: { attributeName: string; attributeValue: string }[]
+  ) {
     this.loading = true;
     this.error = null;
     this.isOpen = true;
@@ -118,10 +123,15 @@ class CartStore {
     try {
       const response = await client.mutation<
         { addToCart: { cart: CartData } },
-        { productId: number; variationId: number; quantity: number }
+        {
+          productId: number;
+          variationId: number;
+          quantity: number;
+          attributes?: { attributeName: string; attributeValue: string }[];
+        }
       >(
         ADD_VARIATION_TO_CART,
-        { productId, variationId, quantity }
+        { productId, variationId, quantity, attributes }
       ).toPromise();
 
       if (response.error) {

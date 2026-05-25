@@ -212,6 +212,17 @@
     errorMessage = null;
   }
 
+  // Build the attributes array for the WooCommerce addToCart mutation
+  function buildCartAttributes(): { attributeName: string; attributeValue: string }[] {
+    const attrs: { attributeName: string; attributeValue: string }[] = [];
+    for (const [name, value] of Object.entries(selectedAttributes)) {
+      if (value !== '') {
+        attrs.push({ attributeName: name, attributeValue: value });
+      }
+    }
+    return attrs;
+  }
+
   // Add to cart
   async function handleAddToCart() {
     if (!allAttributesSelected()) {
@@ -228,7 +239,8 @@
     errorMessage = null;
 
     try {
-      await cart.addVariationToCart(productId, selectedVariation.databaseId, quantity);
+      const cartAttributes = buildCartAttributes();
+      await cart.addVariationToCart(productId, selectedVariation.databaseId, quantity, cartAttributes);
     } catch (e: any) {
       errorMessage = e?.message || 'Chyba při přidávání do košíku.';
     } finally {
