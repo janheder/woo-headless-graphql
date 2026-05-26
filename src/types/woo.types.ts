@@ -63,6 +63,14 @@ export interface Product {
 }
 
 /**
+ * A single attribute term (value) with its slug and human-readable name.
+ */
+export interface AttributeTerm {
+  slug: string;
+  name: string;
+}
+
+/**
  * A product attribute (taxonomy or custom) used for variations.
  */
 export interface ProductAttribute {
@@ -73,6 +81,10 @@ export interface ProductAttribute {
   options: string[];
   variation: boolean;
   visible: boolean;
+  /** Detailed term data with human-readable labels (only for global taxonomy attributes). */
+  terms?: {
+    nodes: AttributeTerm[];
+  } | null;
 }
 
 /**

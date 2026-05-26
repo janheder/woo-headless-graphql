@@ -278,14 +278,14 @@
               onchange={(e) => handleAttributeChange(attr.name, (e.target as HTMLSelectElement).value)}
             >
               <option value="">Vyberte možnost</option>
-              {#each attr.options as option}
-                {@const isAvail = optionAvailability[attr.name]?.[option] ?? true}
+              {#each attr.terms?.nodes ?? attr.options.map(slug => ({ slug, name: slug.charAt(0).toUpperCase() + slug.slice(1) })) as term}
+                {@const isAvail = optionAvailability[attr.name]?.[term.slug] ?? true}
                 <option
-                  value={option}
+                  value={term.slug}
                   disabled={!isAvail}
                   class={isAvail ? 'attached enabled' : 'attached disabled'}
                 >
-                  {option}
+                  {term.name}
                 </option>
               {/each}
             </select>

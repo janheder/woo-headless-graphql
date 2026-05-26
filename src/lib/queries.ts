@@ -120,6 +120,12 @@ export const PRODUCT_FRAGMENT = `
           options
           variation
           visible
+          terms {
+            nodes {
+              slug
+              name
+            }
+          }
         }
       }
       variations(first: 100) {
