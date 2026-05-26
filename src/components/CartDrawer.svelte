@@ -5,13 +5,38 @@
   import type { CartItem } from "../types/woo.types";
 
   /**
-   * Get the variation attribute label for display (e.g., "Color: Red").
+   * Build a lookup map from the parent product's attributes.
+   * Maps the raw attribute name (e.g. "pa_size") to its human-readable label
+   * (e.g. "Délka stélky") as defined in the WooCommerce backend.
+   */
+  function buildAttributeLabelMap(item: CartItem): Record<string, string> {
+    const map: Record<string, string> = {};
+    const productAttrs = item.product.node.attributes?.nodes;
+    if (productAttrs) {
+      for (const attr of productAttrs) {
+        map[attr.name] = attr.label || attr.name;
+      }
+    }
+    return map;
+  }
+
+  /**
+   * Get the variation attribute label for display (e.g., "Délka stélky: 30cm").
+   * Uses the parent product's attribute label (as defined in the backend)
+   * rather than the variation-level label, which may be empty for taxonomy attributes.
+   * Attributes with empty values ("Any..." in WooCommerce) are skipped.
    */
   function getVariationLabel(item: CartItem): string | null {
     const attrs = item.variation?.node?.attributes?.nodes;
     if (!attrs || attrs.length === 0) return null;
-    return attrs
-      .map(a => `${a.label || a.name}: ${a.value}`)
+    const validAttrs = attrs.filter(a => a.value && a.value.trim() !== '');
+    if (validAttrs.length === 0) return null;
+    const labelMap = buildAttributeLabelMap(item);
+    return validAttrs
+      .map(a => {
+        const label = labelMap[a.name] || a.label || a.name;
+        return `${label}: ${a.value}`;
+      })
       .join(', ');
   }
 
