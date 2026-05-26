@@ -180,6 +180,59 @@ export const PRODUCT_FRAGMENT = `
 `;
 
 /**
+ * GraphQL Fragment for product attributes (used in the Additional Information tab).
+ * Fetches attributes on any product type, not just VariableProduct.
+ */
+export const PRODUCT_ATTRIBUTES_FRAGMENT = `
+  fragment ProductAttributesFields on Product {
+    attributes {
+      nodes {
+        id
+        name
+        label
+        options
+        visible
+        ... on GlobalProductAttribute {
+          terms {
+            nodes {
+              slug
+              name
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
+/**
+ * GraphQL Fragment for product reviews.
+ */
+export const PRODUCT_REVIEWS_FRAGMENT = `
+  fragment ProductReviewsFields on Product {
+    reviews(first: 50) {
+      nodes {
+        id
+        databaseId
+        date
+        content
+        rating
+        author {
+          node {
+            name
+            email
+          }
+        }
+      }
+      ratingSummary {
+        average
+        count
+      }
+    }
+  }
+`;
+
+/**
  * GraphQL Fragment for variation data on cart items.
  */
 export const VARIATION_CART_FRAGMENT = `
@@ -293,10 +346,14 @@ export const GET_CATEGORIES = `
 export const GET_PRODUCT_BY_SLUG = `
   ${IMAGE_FRAGMENT}
   ${PRODUCT_FRAGMENT}
+  ${PRODUCT_ATTRIBUTES_FRAGMENT}
+  ${PRODUCT_REVIEWS_FRAGMENT}
   ${SEO_FRAGMENT}
   query GetProductBySlug($slug: ID!) {
     product(id: $slug, idType: SLUG) {
       ...ProductFields
+      ...ProductAttributesFields
+      ...ProductReviewsFields
       description
       shortDescription
       galleryImages {

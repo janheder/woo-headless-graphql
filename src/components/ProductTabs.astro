@@ -1,0 +1,488 @@
+---
+import type { ProductAttribute, ProductReview, RatingSummary } from '../types/woo.types';
+
+interface Props {
+  description: string | null;
+  attributes: ProductAttribute[] | null;
+  reviews: {
+    nodes: ProductReview[];
+    ratingSummary?: RatingSummary | null;
+  } | null;
+  productName: string;
+}
+
+const { description, attributes, reviews, productName } = Astro.props;
+
+// Filter attributes that are visible (for the Additional Information table)
+const visibleAttributes = attributes?.filter(a => a.visible !== false) || [];
+
+// Reviews data
+const reviewNodes = reviews?.nodes || [];
+const ratingSummary = reviews?.ratingSummary;
+const reviewCount = ratingSummary?.count ?? reviewNodes.length;
+
+// Determine which tabs to show
+const hasDescription = !!description;
+const hasAttributes = visibleAttributes.length > 0;
+const hasReviews = reviewCount > 0;
+
+// If there's nothing to show, don't render anything
+if (!hasDescription && !hasAttributes && !hasReviews) {
+  return;
+}
+---
+
+<div class="woocommerce-tabs wc-tabs-wrapper">
+  <ul class="tabs wc-tabs" role="tablist">
+    {hasDescription && (
+      <li role="presentation" class="description_tab active" id="tab-title-description">
+        <a href="#tab-description" role="tab" aria-controls="tab-description" aria-selected="true" tabindex="0">
+          Popis
+        </a>
+      </li>
+    )}
+    {hasAttributes && (
+      <li role="presentation" class="additional_information_tab" id="tab-title-additional_information">
+        <a href="#tab-additional_information" role="tab" aria-controls="tab-additional_information" aria-selected="false" tabindex="-1">
+          Další informace
+        </a>
+      </li>
+    )}
+    {hasReviews && (
+      <li role="presentation" class="reviews_tab" id="tab-title-reviews">
+        <a href="#tab-reviews" role="tab" aria-controls="tab-reviews" aria-selected="false" tabindex="-1">
+          Hodnocení ({reviewCount})
+        </a>
+      </li>
+    )}
+  </ul>
+
+  {hasDescription && (
+    <div class="woocommerce-Tabs-panel woocommerce-Tabs-panel--description panel entry-content wc-tab" id="tab-description" role="tabpanel" aria-labelledby="tab-title-description">
+      <h2>Popis</h2>
+      <div class="product-description-content" set:html={description} />
+    </div>
+  )}
+
+  {hasAttributes && (
+    <div class="woocommerce-Tabs-panel woocommerce-Tabs-panel--additional_information panel entry-content wc-tab" id="tab-additional_information" role="tabpanel" aria-labelledby="tab-title-additional_information" style="display: none;">
+      <h2>Další informace</h2>
+      <table class="woocommerce-product-attributes shop_attributes" aria-label="Podrobnosti produktu">
+        <tbody>
+          {visibleAttributes.map((attr) => {
+            // Build human-readable values list
+            let values: string;
+            if (attr.terms?.nodes && attr.terms.nodes.length > 0) {
+              // Use human-readable term names
+              values = attr.terms.nodes.map(t => t.name).join(', ');
+            } else {
+              // Fall back to options array (raw slugs)
+              values = attr.options.map(o => o.charAt(0).toUpperCase() + o.slice(1)).join(', ');
+            }
+            return (
+              <tr class="woocommerce-product-attributes-item woocommerce-product-attributes-item--{attr.name}">
+                <th class="woocommerce-product-attributes-item__label" scope="row">{attr.label || attr.name}</th>
+                <td class="woocommerce-product-attributes-item__value"><p>{values}</p></td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  )}
+
+  {hasReviews && (
+    <div class="woocommerce-Tabs-panel woocommerce-Tabs-panel--reviews panel entry-content wc-tab" id="tab-reviews" role="tabpanel" aria-labelledby="tab-title-reviews" style="display: none;">
+      <div id="reviews" class="woocommerce-Reviews">
+        <div id="comments">
+          <h2 class="woocommerce-Reviews-title">
+            {reviewCount === 1 ? 'Recenze' : `Recenze (${reviewCount})`}
+          </h2>
+
+          {ratingSummary && ratingSummary.average != null && (
+            <div class="rating-summary">
+              <div class="average-rating">
+                <span class="rating-value">{ratingSummary.average.toFixed(1)}</span>
+                <div class="stars-rating" aria-label={`Průměrné hodnocení ${ratingSummary.average.toFixed(1)} z 5`}>
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <span class={`star ${star <= Math.round(ratingSummary.average!) ? 'filled' : ''}`}>&#9733;</span>
+                  ))}
+                </div>
+                <span class="rating-count">({ratingSummary.count} hodnocení)</span>
+              </div>
+            </div>
+          )}
+
+          {reviewNodes.length > 0 ? (
+            <ol class="commentlist">
+              {reviewNodes.map((review) => (
+                <li class="review" id={`li-comment-${review.databaseId}`}>
+                  <div id={`comment-${review.databaseId}`} class="comment_container">
+                    <div class="comment-text">
+                      {review.rating != null && (
+                        <div class="star-rating" role="img" aria-label={`Hodnoceno ${review.rating} z 5`}>
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <span class={`star ${star <= review.rating! ? 'filled' : ''}`}>&#9733;</span>
+                          ))}
+                        </div>
+                      )}
+                      <p class="meta">
+                        <strong class="woocommerce-review__author">{review.author?.node?.name || 'Anonym'}</strong>
+                        {review.date && (
+                          <span class="woocommerce-review__published-date">
+                            &ndash; {new Date(review.date).toLocaleDateString('cs-CZ', { year: 'numeric', month: 'long', day: 'numeric' })}
+                          </span>
+                        )}
+                      </p>
+                      <div class="description">
+                        <p set:html={review.content || ''} />
+                      </div>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <p class="woocommerce-noreviews">Zatím zde nejsou žádné recenze.</p>
+          )}
+        </div>
+      </div>
+    </div>
+  )}
+</div>
+
+<script>
+  /**
+   * Client-side tab switching for WooCommerce product tabs.
+   * Matches the WooCommerce tab HTML structure for compatibility.
+   */
+  const tabWrapper = document.querySelector('.woocommerce-tabs');
+  if (!tabWrapper) throw new Error('Missing .woocommerce-tabs wrapper');
+
+  const tabList = tabWrapper.querySelector('.tabs');
+  const tabs = tabList?.querySelectorAll<HTMLLIElement>('.tabs li');
+  const panels = tabWrapper.querySelectorAll<HTMLDivElement>('.wc-tab');
+
+  function activateTab(tabId: string) {
+    // Deactivate all tabs
+    tabs?.forEach(t => {
+      t.classList.remove('active');
+      const link = t.querySelector('a');
+      if (link) {
+        link.setAttribute('aria-selected', 'false');
+        link.setAttribute('tabindex', '-1');
+      }
+    });
+
+    // Hide all panels
+    panels.forEach(p => {
+      p.style.display = 'none';
+    });
+
+    // Activate the selected tab
+    const selectedTab = tabWrapper.querySelector<HTMLLIElement>(`#tab-title-${tabId}`);
+    if (selectedTab) {
+      selectedTab.classList.add('active');
+      const link = selectedTab.querySelector('a');
+      if (link) {
+        link.setAttribute('aria-selected', 'true');
+        link.setAttribute('tabindex', '0');
+        link.focus();
+      }
+    }
+
+    // Show the corresponding panel
+    const selectedPanel = tabWrapper.querySelector<HTMLDivElement>(`#tab-${tabId}`);
+    if (selectedPanel) {
+      selectedPanel.style.display = '';
+    }
+  }
+
+  // Attach click handlers
+  tabs?.forEach(tab => {
+    const link = tab.querySelector('a');
+    if (!link) return;
+
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      const href = link.getAttribute('href');
+      if (!href) return;
+      const tabId = href.replace('#tab-', '');
+      activateTab(tabId);
+    });
+
+    // Keyboard navigation
+    link.addEventListener('keydown', (e) => {
+      const currentIndex = Array.from(tabs).indexOf(tab);
+      let newIndex = -1;
+
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        newIndex = (currentIndex + 1) % tabs.length;
+      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        newIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+      } else if (e.key === 'Home') {
+        e.preventDefault();
+        newIndex = 0;
+      } else if (e.key === 'End') {
+        e.preventDefault();
+        newIndex = tabs.length - 1;
+      }
+
+      if (newIndex >= 0) {
+        const newTab = tabs[newIndex];
+        const newLink = newTab.querySelector('a');
+        if (newLink) {
+          const href = newLink.getAttribute('href');
+          if (href) {
+            activateTab(href.replace('#tab-', ''));
+          }
+        }
+      }
+    });
+  });
+</script>
+
+<style>
+  .woocommerce-tabs {
+    margin-top: var(--spacing-xxl);
+    border-top: 0.1rem solid var(--color-border);
+    padding-top: 0;
+  }
+
+  .tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-bottom: 0.2rem solid var(--color-border);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .tabs li {
+    margin: 0;
+    padding: 0;
+    position: relative;
+  }
+
+  .tabs li a {
+    display: block;
+    padding: var(--spacing-md) var(--spacing-lg);
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    text-decoration: none;
+    white-space: nowrap;
+    transition: color var(--transition-fast), border-color var(--transition-fast);
+    border-bottom: 0.2rem solid transparent;
+    margin-bottom: -0.2rem;
+  }
+
+  .tabs li a:hover {
+    color: var(--color-text);
+  }
+
+  .tabs li.active a {
+    color: var(--color-primary);
+    border-bottom-color: var(--color-primary);
+  }
+
+  .tabs li a:focus-visible {
+    outline: 0.2rem solid var(--color-primary);
+    outline-offset: -0.2rem;
+    border-radius: var(--radius-xs);
+  }
+
+  /* Tab Panels */
+  .panel {
+    padding: var(--spacing-xl) 0;
+    animation: fadeIn var(--transition-normal) ease-out;
+  }
+
+  .panel h2 {
+    font-size: 2.0rem;
+    font-weight: 700;
+    margin-bottom: var(--spacing-lg);
+    letter-spacing: -0.01em;
+  }
+
+  /* Description Content */
+  .product-description-content {
+    font-size: 1.6rem;
+    line-height: 1.8;
+    color: var(--color-text);
+  }
+
+  .product-description-content :global(p) {
+    margin-bottom: var(--spacing-md);
+  }
+
+  .product-description-content :global(h2),
+  .product-description-content :global(h3) {
+    font-size: 2.0rem;
+    font-weight: 600;
+    margin: var(--spacing-xl) 0 var(--spacing-sm) 0;
+  }
+
+  .product-description-content :global(ul),
+  .product-description-content :global(ol) {
+    margin: 0 0 var(--spacing-md) var(--spacing-lg);
+  }
+
+  .product-description-content :global(li) {
+    margin-bottom: var(--spacing-xxs);
+  }
+
+  /* Attributes Table */
+  .shop_attributes {
+    width: 100%;
+    border-collapse: collapse;
+    border-spacing: 0;
+  }
+
+  .shop_attributes tr {
+    border-bottom: 0.1rem solid var(--color-border);
+  }
+
+  .shop_attributes tr:last-child {
+    border-bottom: none;
+  }
+
+  .shop_attributes th {
+    width: 30%;
+    padding: var(--spacing-md) var(--spacing-lg) var(--spacing-md) 0;
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--color-text);
+    text-align: left;
+    vertical-align: top;
+  }
+
+  .shop_attributes td {
+    padding: var(--spacing-md) 0;
+    font-size: 1.4rem;
+    color: var(--color-text);
+    vertical-align: top;
+  }
+
+  .shop_attributes td p {
+    margin: 0;
+  }
+
+  /* Reviews */
+  .woocommerce-Reviews {
+    max-width: 72rem;
+  }
+
+  .rating-summary {
+    margin-bottom: var(--spacing-xl);
+    padding: var(--spacing-lg);
+    background-color: var(--color-surface);
+    border: 0.1rem solid var(--color-border);
+    border-radius: var(--radius-md);
+  }
+
+  .average-rating {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    flex-wrap: wrap;
+  }
+
+  .rating-value {
+    font-size: 3.2rem;
+    font-weight: 800;
+    color: var(--color-text);
+    line-height: 1;
+  }
+
+  .stars-rating {
+    display: inline-flex;
+    gap: 0.2rem;
+  }
+
+  .star-rating {
+    display: inline-flex;
+    gap: 0.1rem;
+    margin-bottom: var(--spacing-xs);
+  }
+
+  .star {
+    font-size: 1.8rem;
+    color: var(--color-border-hover);
+    line-height: 1;
+  }
+
+  .star.filled {
+    color: var(--color-secondary);
+  }
+
+  .rating-count {
+    font-size: 1.4rem;
+    color: var(--color-text-muted);
+  }
+
+  .commentlist {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .review {
+    margin-bottom: var(--spacing-lg);
+    padding: var(--spacing-lg);
+    background-color: var(--color-surface);
+    border: 0.1rem solid var(--color-border);
+    border-radius: var(--radius-md);
+  }
+
+  .comment-text .meta {
+    font-size: 1.3rem;
+    color: var(--color-text-muted);
+    margin-bottom: var(--spacing-sm);
+  }
+
+  .woocommerce-review__author {
+    font-weight: 700;
+    color: var(--color-text);
+  }
+
+  .woocommerce-review__published-date {
+    color: var(--color-text-muted);
+  }
+
+  .comment-text .description {
+    font-size: 1.5rem;
+    line-height: 1.6;
+    color: var(--color-text);
+  }
+
+  .comment-text .description :global(p) {
+    margin-bottom: var(--spacing-xs);
+  }
+
+  .woocommerce-noreviews {
+    font-size: 1.5rem;
+    color: var(--color-text-muted);
+    font-style: italic;
+    padding: var(--spacing-lg);
+    background-color: var(--color-surface);
+    border: 0.1rem solid var(--color-border);
+    border-radius: var(--radius-md);
+  }
+
+  @media (max-width: 767px) {
+    .tabs li a {
+      padding: var(--spacing-sm) var(--spacing-md);
+      font-size: 1.4rem;
+    }
+
+    .shop_attributes th {
+      width: 40%;
+    }
+  }
+</style>

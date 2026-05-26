@@ -2,9 +2,10 @@
 import Layout from '../../layouts/Layout.astro';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import VariationSelector from '../../components/VariationSelector.svelte';
+import ProductTabs from '../../components/ProductTabs.astro';
 import { fetchGQL } from '../../lib/fetch-gql';
 import { GET_PRODUCTS, GET_PRODUCT_BY_SLUG } from '../../lib/queries';
-import type { GetProductsResponse, GetProductBySlugResponse, GroupedChildProduct, ProductAttribute, ProductVariation } from '../../types/woo.types';
+import type { GetProductsResponse, GetProductBySlugResponse, GroupedChildProduct, ProductAttribute, ProductVariation, ProductReview, RatingSummary } from '../../types/woo.types';
 import { formatPrice, rewriteAssetUrl } from '../../lib/utils';
 
 // Pre-render static paths for all products
@@ -224,13 +225,13 @@ breadcrumbItems.push({ label: product.name });
       </div>
     </div>
 
-    <!-- Full Rich HTML Description -->
-    {product.description && (
-      <section class="description-section">
-        <h2 class="description-heading">Podrobné informace o produktu</h2>
-        <div class="full-description" set:html={product.description} />
-      </section>
-    )}
+    <!-- WooCommerce-style Tabs: Description, Additional Information, Reviews -->
+    <ProductTabs
+      description={product.description ?? null}
+      attributes={product.attributes?.nodes as ProductAttribute[] | null ?? null}
+      reviews={product.reviews as { nodes: ProductReview[]; ratingSummary?: RatingSummary | null } | null ?? null}
+      productName={product.name}
+    />
   </article>
 </Layout>
 
@@ -654,45 +655,4 @@ breadcrumbItems.push({ label: product.name });
     border-radius: var(--radius-lg);
   }
 
-  /* Full Detailed Description Section */
-  .description-section {
-    margin-top: var(--spacing-xxl);
-    border-top: 0.1rem solid var(--color-border);
-    padding-top: var(--spacing-xxl);
-    animation: fadeIn var(--transition-normal) ease-out;
-  }
-
-  .description-heading {
-    font-size: 2.4rem;
-    font-weight: 700;
-    margin-bottom: var(--spacing-lg);
-    letter-spacing: -0.01em;
-  }
-
-  .full-description {
-    font-size: 1.6rem;
-    color: var(--color-text);
-    line-height: 1.8;
-  }
-
-  /* Sub-elements styles for GQL fetched content description block */
-  .full-description :global(p) {
-    margin-bottom: var(--spacing-md);
-  }
-
-  .full-description :global(h2),
-  .full-description :global(h3) {
-    font-size: 2.0rem;
-    font-weight: 600;
-    margin: var(--spacing-xl) 0 var(--spacing-sm) 0;
-  }
-
-  .full-description :global(ul),
-  .full-description :global(ol) {
-    margin: 0 0 var(--spacing-md) var(--spacing-lg);
-  }
-
-  .full-description :global(li) {
-    margin-bottom: var(--spacing-xxs);
-  }
 </style>

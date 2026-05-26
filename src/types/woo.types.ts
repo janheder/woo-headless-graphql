@@ -52,7 +52,7 @@ export interface Product {
   products?: {
     nodes: GroupedChildProduct[];
   } | null;
-  /** VariableProduct attributes (only populated when __typename === 'VariableProduct') */
+  /** Product attributes (for all product types, used in Additional Information tab) */
   attributes?: {
     nodes: ProductAttribute[];
   } | null;
@@ -60,6 +60,8 @@ export interface Product {
   variations?: {
     nodes: ProductVariation[];
   } | null;
+  /** Product reviews */
+  reviews?: ProductReviews | null;
 }
 
 /**
@@ -346,4 +348,37 @@ export interface CheckoutResponse {
       total?: string | null;
     } | null;
   } | null;
+}
+
+/**
+ * A single product review.
+ */
+export interface ProductReview {
+  id: string;
+  databaseId: number;
+  date?: string | null;
+  content?: string | null;
+  rating?: number | null;
+  author?: {
+    node: {
+      name?: string | null;
+      email?: string | null;
+    };
+  } | null;
+}
+
+/**
+ * Rating summary for a product.
+ */
+export interface RatingSummary {
+  average?: number | null;
+  count?: number | null;
+}
+
+/**
+ * Product reviews connection.
+ */
+export interface ProductReviews {
+  nodes: ProductReview[];
+  ratingSummary?: RatingSummary | null;
 }
