@@ -267,7 +267,6 @@
         <tr>
           <th class="label">
             <label for={attr.name}>{attr.label || attr.name}</label>
-            <span style="display:none" data-debug-label={attr.label}>{attr.label}</span>
           </th>
           <td class="value">
             <select
