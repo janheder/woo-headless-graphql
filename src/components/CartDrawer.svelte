@@ -25,16 +25,16 @@
   }
 
   /**
-   * Get the variation attribute label for display (e.g., "Délka stélky: 30cm").
+   * Get the variation attributes as an array of { label, value } objects.
    * Uses purely DB data and handles "Any..." (empty value) variations by matching databaseId.
    * Resolves term slugs to their human-readable names from the global attribute terms.
    */
-  function getVariationLabel(item: CartItem): string | null {
+  function getVariationAttributes(item: CartItem): { label: string; value: string }[] {
     const variationNode = item.variation?.node;
     const productNode = item.product?.node;
     const productAttributes = productNode?.attributes?.nodes || [];
 
-    if (!variationNode || !productNode || productAttributes.length === 0) return null;
+    if (!variationNode || !productNode || productAttributes.length === 0) return [];
 
     // 1. Find the complete DB variation data from the product's variations list by databaseId.
     //    This contains the real attribute values even for "Any..." variations.
@@ -45,7 +45,7 @@
     // Use attributes from the cart level variation data first (contains actual user choices for Any...),
     // fall back to db variation attributes, and then to variation node attributes.
     const targetAttrs = item.variation?.attributes || dbVariation?.attributes?.nodes || variationNode.attributes?.nodes || [];
-    if (targetAttrs.length === 0) return null;
+    if (targetAttrs.length === 0) return [];
 
     // 2. Build the label map from parent product attributes (includes terms for translation)
     const labelMap = buildAttributeLabelMap(item);
@@ -69,10 +69,9 @@
         );
         const termName = dbTerm?.name || a.value;
 
-        return `${label}: ${termName}`;
+        return { label, value: termName };
       })
-      .filter(Boolean)
-      .join(', ');
+      .filter(Boolean) as { label: string; value: string }[];
   }
 
   /**
@@ -212,9 +211,12 @@
                       {item.product.node.name}
                     </a>
                     {#if item.variation?.node?.attributes?.nodes?.length}
-                      <span class="item-variation-label">
-                        {getVariationLabel(item)}
-                      </span>
+                      {@const attrs = getVariationAttributes(item)}
+                      <div class="item-variation-labels">
+                        {#each attrs as attr}
+                          <span class="item-variation-single">{attr.label}: {attr.value}</span>
+                        {/each}
+                      </div>
                     {/if}
                     <button
                       class="remove-button"
@@ -472,11 +474,16 @@
     color: var(--color-primary);
   }
 
-  .item-variation-label {
-    display: block;
+  .item-variation-labels {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 0.8rem;
+    margin-top: 0.2rem;
+  }
+
+  .item-variation-single {
     font-size: 1.2rem;
     color: var(--color-text-muted);
-    margin-top: 0.2rem;
     line-height: 1.4;
   }
 
