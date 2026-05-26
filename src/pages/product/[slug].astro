@@ -5,7 +5,7 @@ import VariationSelector from '../../components/VariationSelector.svelte';
 import ProductTabs from '../../components/ProductTabs.astro';
 import { fetchGQL } from '../../lib/fetch-gql';
 import { GET_PRODUCTS, GET_PRODUCT_BY_SLUG } from '../../lib/queries';
-import type { GetProductsResponse, GetProductBySlugResponse, GroupedChildProduct, ProductAttribute, ProductVariation, ProductReview, RatingSummary } from '../../types/woo.types';
+import type { GetProductsResponse, GetProductBySlugResponse, GroupedChildProduct, ProductAttribute, ProductVariation } from '../../types/woo.types';
 import { formatPrice, rewriteAssetUrl } from '../../lib/utils';
 
 // Pre-render static paths for all products
@@ -227,10 +227,9 @@ breadcrumbItems.push({ label: product.name });
 
     <!-- WooCommerce-style Tabs: Description, Additional Information, Reviews -->
     <ProductTabs
-      description={product.description ?? null}
-      attributes={product.attributes?.nodes as ProductAttribute[] | null ?? null}
-      reviews={product.reviews as { nodes: ProductReview[]; ratingSummary?: RatingSummary | null } | null ?? null}
-      productName={product.name}
+      description={product.description}
+      attributes={product.attributes?.nodes}
+      reviews={product.reviews}
     />
   </article>
 </Layout>

@@ -2,16 +2,15 @@
 import type { ProductAttribute, ProductReview, RatingSummary } from '../types/woo.types';
 
 interface Props {
-  description: string | null;
-  attributes: ProductAttribute[] | null;
+  description: string | null | undefined;
+  attributes: ProductAttribute[] | null | undefined;
   reviews: {
     nodes: ProductReview[];
     ratingSummary?: RatingSummary | null;
-  } | null;
-  productName: string;
+  } | null | undefined;
 }
 
-const { description, attributes, reviews, productName } = Astro.props;
+const { description, attributes, reviews } = Astro.props;
 
 // Filter attributes that are visible (for the Additional Information table)
 const visibleAttributes = attributes?.filter(a => a.visible !== false) || [];
@@ -156,14 +155,16 @@ if (!hasDescription && !hasAttributes && !hasReviews) {
    * Client-side tab switching for WooCommerce product tabs.
    * Matches the WooCommerce tab HTML structure for compatibility.
    */
-  const tabWrapper = document.querySelector('.woocommerce-tabs');
-  if (!tabWrapper) throw new Error('Missing .woocommerce-tabs wrapper');
+  const tabWrapper = document.querySelector<HTMLDivElement>('.woocommerce-tabs');
+  if (!tabWrapper) return;
 
   const tabList = tabWrapper.querySelector('.tabs');
   const tabs = tabList?.querySelectorAll<HTMLLIElement>('.tabs li');
   const panels = tabWrapper.querySelectorAll<HTMLDivElement>('.wc-tab');
 
   function activateTab(tabId: string) {
+    if (!tabWrapper) return;
+
     // Deactivate all tabs
     tabs?.forEach(t => {
       t.classList.remove('active');
