@@ -118,17 +118,6 @@ export interface VariationAttribute {
 }
 
 /**
- * A cart item attribute — the raw attribute values the customer selected
- * when adding the item to the cart. These are present even for "Any..." attributes
- * where the variation itself has an empty value in the database.
- * Human-readable labels and term names are resolved from `product.node.attributes`.
- */
-export interface CartAttribute {
-  name: string;
-  value: string;
-}
-
-/**
  * A child product within a GroupProduct listing.
  * These are always SimpleProduct instances with basic pricing.
  */
@@ -206,12 +195,6 @@ export interface CartItem {
   variation?: {
     node: ProductVariation;
   } | null;
-  /**
-   * The actual attribute values the customer selected when adding to cart.
-   * These are present even for "Any..." attributes where the variation itself
-   * has an empty value in the database.
-   */
-  attributes?: CartAttribute[] | null;
 }
 
 export interface CartData {
