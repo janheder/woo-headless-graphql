@@ -120,10 +120,12 @@ export const PRODUCT_FRAGMENT = `
           options
           variation
           visible
-          terms {
-            nodes {
-              slug
-              name
+          ... on GlobalProductAttribute {
+            terms {
+              nodes {
+                slug
+                name
+              }
             }
           }
         }
