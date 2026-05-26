@@ -1,6 +1,7 @@
 <script lang="ts">
   import { cart } from "../stores/cart.svelte";
   import { formatPrice, rewriteAssetUrl } from "../lib/utils";
+  import type { CartItem } from "../types/woo.types";
 
   function incrementItem(key: string, currentQty: number) {
     cart.updateQuantity(key, currentQty + 1);
@@ -12,6 +13,73 @@
 
   function removeItem(key: string) {
     cart.updateQuantity(key, 0);
+  }
+
+  /**
+   * Build a lookup map from the parent product's attributes.
+   * Maps the raw attribute name (e.g. "pa_size") to an object containing
+   * the human-readable label and the full attribute data (including terms).
+   */
+  function buildAttributeLabelMap(item: CartItem): Record<string, { label: string; terms?: { nodes: { slug: string; name: string }[] } | null }> {
+    const map: Record<string, { label: string; terms?: { nodes: { slug: string; name: string }[] } | null }> = {};
+    const productAttrs = item.product.node.attributes?.nodes;
+    if (productAttrs) {
+      for (const attr of productAttrs) {
+        map[attr.name] = {
+          label: attr.label || attr.name,
+          terms: attr.terms,
+        };
+      }
+    }
+    return map;
+  }
+
+  /**
+   * Get the variation attribute label for display (e.g., "Délka stélky: 30cm").
+   * Uses purely DB data and handles "Any..." (empty value) variations by matching databaseId.
+   * Resolves term slugs to their human-readable names from the global attribute terms.
+   */
+  function getVariationLabel(item: CartItem): string | null {
+    const variationNode = item.variation?.node;
+    const productNode = item.product?.node;
+    const productAttributes = productNode?.attributes?.nodes || [];
+
+    if (!variationNode || !productNode || productAttributes.length === 0) return null;
+
+    // Find the complete DB variation data from the product's variations list by databaseId
+    const dbVariation = productNode.variations?.nodes?.find(
+      (v: any) => v.databaseId === variationNode.databaseId
+    );
+
+    // Use attributes from the found DB variation, fall back to cart-level attributes
+    const targetAttrs = dbVariation?.attributes?.nodes || variationNode.attributes?.nodes || [];
+    if (targetAttrs.length === 0) return null;
+
+    // Build the label map from parent product attributes
+    const labelMap = buildAttributeLabelMap(item);
+
+    return targetAttrs
+      .map(a => {
+        // Skip if value is still empty even in DB data
+        if (!a.value || a.value.trim() === '') return null;
+
+        // Get the human-readable attribute label
+        const attrInfo = labelMap[a.name];
+        const label = attrInfo?.label || a.label || a.name;
+
+        // Resolve term slug to human-readable name from global attribute terms
+        const globalAttr = productAttributes.find(
+          pa => pa.name.toLowerCase() === a.name.toLowerCase()
+        );
+        const dbTerm = globalAttr?.terms?.nodes?.find(
+          (t: any) => t.slug.toLowerCase() === a.value.toLowerCase()
+        );
+        const termName = dbTerm?.name || a.value;
+
+        return `${label}: ${termName}`;
+      })
+      .filter(Boolean)
+      .join(', ');
   }
 </script>
 
@@ -66,6 +134,11 @@
                   <a href={`/product/${item.product.node.slug}`} class="item-name">
                     {item.product.node.name}
                   </a>
+                  {#if item.variation?.node?.attributes?.nodes?.length}
+                    <span class="item-variation-label">
+                      {getVariationLabel(item)}
+                    </span>
+                  {/if}
                   <div class="item-price">
                     {#if item.product.node.onSale && item.product.node.regularPrice}
                       <span class="price-old">{formatPrice(item.product.node.regularPrice)}</span>
@@ -284,6 +357,14 @@
 
   .item-name:hover {
     color: var(--color-primary);
+  }
+
+  .item-variation-label {
+    display: block;
+    font-size: 1.3rem;
+    color: var(--color-text-muted);
+    margin-top: 0.2rem;
+    line-height: 1.4;
   }
 
   .item-price {

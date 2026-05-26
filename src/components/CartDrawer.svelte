@@ -6,15 +6,19 @@
 
   /**
    * Build a lookup map from the parent product's attributes.
-   * Maps the raw attribute name (e.g. "pa_size") to its human-readable label
-   * (e.g. "Délka stélky") as defined in the WooCommerce backend.
+   * Maps the raw attribute name (e.g. "pa_size") to an object containing
+   * the human-readable label (e.g. "Délka stélky") and the full attribute
+   * data (including terms) as defined in the WooCommerce backend.
    */
-  function buildAttributeLabelMap(item: CartItem): Record<string, string> {
-    const map: Record<string, string> = {};
+  function buildAttributeLabelMap(item: CartItem): Record<string, { label: string; terms?: { nodes: { slug: string; name: string }[] } | null }> {
+    const map: Record<string, { label: string; terms?: { nodes: { slug: string; name: string }[] } | null }> = {};
     const productAttrs = item.product.node.attributes?.nodes;
     if (productAttrs) {
       for (const attr of productAttrs) {
-        map[attr.name] = attr.label || attr.name;
+        map[attr.name] = {
+          label: attr.label || attr.name,
+          terms: attr.terms,
+        };
       }
     }
     return map;
@@ -22,21 +26,51 @@
 
   /**
    * Get the variation attribute label for display (e.g., "Délka stélky: 30cm").
-   * Uses the parent product's attribute label (as defined in the backend)
-   * rather than the variation-level label, which may be empty for taxonomy attributes.
-   * Attributes with empty values ("Any..." in WooCommerce) are skipped.
+   * Uses purely DB data and handles "Any..." (empty value) variations by matching databaseId.
+   * Resolves term slugs to their human-readable names from the global attribute terms.
    */
   function getVariationLabel(item: CartItem): string | null {
-    const attrs = item.variation?.node?.attributes?.nodes;
-    if (!attrs || attrs.length === 0) return null;
-    const validAttrs = attrs.filter(a => a.value && a.value.trim() !== '');
-    if (validAttrs.length === 0) return null;
+    const variationNode = item.variation?.node;
+    const productNode = item.product?.node;
+    const productAttributes = productNode?.attributes?.nodes || [];
+
+    if (!variationNode || !productNode || productAttributes.length === 0) return null;
+
+    // 1. Find the complete DB variation data from the product's variations list by databaseId.
+    //    This contains the real attribute values even for "Any..." variations.
+    const dbVariation = productNode.variations?.nodes?.find(
+      (v: any) => v.databaseId === variationNode.databaseId
+    );
+
+    // Use attributes from the found DB variation, fall back to cart-level attributes
+    const targetAttrs = dbVariation?.attributes?.nodes || variationNode.attributes?.nodes || [];
+    if (targetAttrs.length === 0) return null;
+
+    // 2. Build the label map from parent product attributes (includes terms for translation)
     const labelMap = buildAttributeLabelMap(item);
-    return validAttrs
+
+    return targetAttrs
       .map(a => {
-        const label = labelMap[a.name] || a.label || a.name;
-        return `${label}: ${a.value}`;
+        // Skip if value is still empty even in DB data
+        if (!a.value || a.value.trim() === '') return null;
+
+        // Get the human-readable attribute label (e.g. "pa_size" -> "Délka stélky")
+        const attrInfo = labelMap[a.name];
+        const label = attrInfo?.label || a.label || a.name;
+
+        // Resolve term slug to human-readable name from global attribute terms
+        // (e.g. "30cm" -> "30cm" or "large" -> "Velké L")
+        const globalAttr = productAttributes.find(
+          pa => pa.name.toLowerCase() === a.name.toLowerCase()
+        );
+        const dbTerm = globalAttr?.terms?.nodes?.find(
+          (t: any) => t.slug.toLowerCase() === a.value.toLowerCase()
+        );
+        const termName = dbTerm?.name || a.value;
+
+        return `${label}: ${termName}`;
       })
+      .filter(Boolean)
       .join(', ');
   }
 
