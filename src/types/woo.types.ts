@@ -358,7 +358,6 @@ export interface ProductReview {
   databaseId: number;
   date?: string | null;
   content?: string | null;
-  rating?: number | null;
   author?: {
     node: {
       name?: string | null;
@@ -368,17 +367,8 @@ export interface ProductReview {
 }
 
 /**
- * Rating summary for a product.
- */
-export interface RatingSummary {
-  average?: number | null;
-  count?: number | null;
-}
-
-/**
  * Product reviews connection.
  */
 export interface ProductReviews {
   nodes: ProductReview[];
-  ratingSummary?: RatingSummary | null;
 }

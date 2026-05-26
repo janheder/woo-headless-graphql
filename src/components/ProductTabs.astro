@@ -1,12 +1,11 @@
 ---
-import type { ProductAttribute, ProductReview, RatingSummary } from '../types/woo.types';
+import type { ProductAttribute, ProductReview } from '../types/woo.types';
 
 interface Props {
   description: string | null | undefined;
   attributes: ProductAttribute[] | null | undefined;
   reviews: {
     nodes: ProductReview[];
-    ratingSummary?: RatingSummary | null;
   } | null | undefined;
 }
 
@@ -17,8 +16,7 @@ const visibleAttributes = attributes?.filter(a => a.visible !== false) || [];
 
 // Reviews data
 const reviewNodes = reviews?.nodes || [];
-const ratingSummary = reviews?.ratingSummary;
-const reviewCount = ratingSummary?.count ?? reviewNodes.length;
+const reviewCount = reviewNodes.length;
 
 // Determine which tabs to show
 const hasDescription = !!description;
@@ -98,33 +96,12 @@ if (!hasDescription && !hasAttributes && !hasReviews) {
             {reviewCount === 1 ? 'Recenze' : `Recenze (${reviewCount})`}
           </h2>
 
-          {ratingSummary && ratingSummary.average != null && (
-            <div class="rating-summary">
-              <div class="average-rating">
-                <span class="rating-value">{ratingSummary.average.toFixed(1)}</span>
-                <div class="stars-rating" aria-label={`Průměrné hodnocení ${ratingSummary.average.toFixed(1)} z 5`}>
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <span class={`star ${star <= Math.round(ratingSummary.average!) ? 'filled' : ''}`}>&#9733;</span>
-                  ))}
-                </div>
-                <span class="rating-count">({ratingSummary.count} hodnocení)</span>
-              </div>
-            </div>
-          )}
-
           {reviewNodes.length > 0 ? (
             <ol class="commentlist">
               {reviewNodes.map((review) => (
                 <li class="review" id={`li-comment-${review.databaseId}`}>
                   <div id={`comment-${review.databaseId}`} class="comment_container">
                     <div class="comment-text">
-                      {review.rating != null && (
-                        <div class="star-rating" role="img" aria-label={`Hodnoceno ${review.rating} z 5`}>
-                          {[1, 2, 3, 4, 5].map((star) => (
-                            <span class={`star ${star <= review.rating! ? 'filled' : ''}`}>&#9733;</span>
-                          ))}
-                        </div>
-                      )}
                       <p class="meta">
                         <strong class="woocommerce-review__author">{review.author?.node?.name || 'Anonym'}</strong>
                         {review.date && (
@@ -377,54 +354,6 @@ if (!hasDescription && !hasAttributes && !hasReviews) {
   /* Reviews */
   .woocommerce-Reviews {
     max-width: 72rem;
-  }
-
-  .rating-summary {
-    margin-bottom: var(--spacing-xl);
-    padding: var(--spacing-lg);
-    background-color: var(--color-surface);
-    border: 0.1rem solid var(--color-border);
-    border-radius: var(--radius-md);
-  }
-
-  .average-rating {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-sm);
-    flex-wrap: wrap;
-  }
-
-  .rating-value {
-    font-size: 3.2rem;
-    font-weight: 800;
-    color: var(--color-text);
-    line-height: 1;
-  }
-
-  .stars-rating {
-    display: inline-flex;
-    gap: 0.2rem;
-  }
-
-  .star-rating {
-    display: inline-flex;
-    gap: 0.1rem;
-    margin-bottom: var(--spacing-xs);
-  }
-
-  .star {
-    font-size: 1.8rem;
-    color: var(--color-border-hover);
-    line-height: 1;
-  }
-
-  .star.filled {
-    color: var(--color-secondary);
-  }
-
-  .rating-count {
-    font-size: 1.4rem;
-    color: var(--color-text-muted);
   }
 
   .commentlist {

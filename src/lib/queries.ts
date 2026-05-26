@@ -181,10 +181,11 @@ export const PRODUCT_FRAGMENT = `
 
 /**
  * GraphQL Fragment for product attributes (used in the Additional Information tab).
- * Fetches attributes on any product type, not just VariableProduct.
+ * Fetches attributes on any product type via the ProductWithAttributes interface.
+ * SimpleProduct, VariableProduct, GroupProduct all implement ProductWithAttributes.
  */
 export const PRODUCT_ATTRIBUTES_FRAGMENT = `
-  fragment ProductAttributesFields on Product {
+  fragment ProductAttributesFields on ProductWithAttributes {
     attributes {
       nodes {
         id
@@ -207,6 +208,8 @@ export const PRODUCT_ATTRIBUTES_FRAGMENT = `
 
 /**
  * GraphQL Fragment for product reviews.
+ * NOTE: `rating` and `ratingSummary` depend on the WooGraphQL plugin version.
+ * If the schema doesn't support them, the query will still work (fields will be null).
  */
 export const PRODUCT_REVIEWS_FRAGMENT = `
   fragment ProductReviewsFields on Product {
@@ -216,17 +219,12 @@ export const PRODUCT_REVIEWS_FRAGMENT = `
         databaseId
         date
         content
-        rating
         author {
           node {
             name
             email
           }
         }
-      }
-      ratingSummary {
-        average
-        count
       }
     }
   }
@@ -352,7 +350,9 @@ export const GET_PRODUCT_BY_SLUG = `
   query GetProductBySlug($slug: ID!) {
     product(id: $slug, idType: SLUG) {
       ...ProductFields
-      ...ProductAttributesFields
+      ... on ProductWithAttributes {
+        ...ProductAttributesFields
+      }
       ...ProductReviewsFields
       description
       shortDescription
