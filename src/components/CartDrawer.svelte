@@ -5,36 +5,52 @@
   import type { CartItem } from "../types/woo.types";
 
   /**
-   * Build a lookup map from the parent product's attributes.
-   * Maps the raw attribute name (e.g. "pa_size") to its human-readable label
-   * (e.g. "Délka stélky") as defined in the WooCommerce backend.
-   */
-  function buildAttributeLabelMap(item: CartItem): Record<string, string> {
-    const map: Record<string, string> = {};
-    const productAttrs = item.product.node.attributes?.nodes;
-    if (productAttrs) {
-      for (const attr of productAttrs) {
-        map[attr.name] = attr.label || attr.name;
-      }
-    }
-    return map;
-  }
-
-  /**
-   * Get the variation attribute label for display (e.g., "Délka stélky: 30cm").
-   * Uses the parent product's attribute label (as defined in the backend)
-   * rather than the variation-level label, which may be empty for taxonomy attributes.
-   * Attributes with empty values ("Any..." in WooCommerce) are skipped.
+   * Get the variation attribute label for display (e.g., "Rozměry: Velké L").
+   *
+   * Uses purely DB data:
+   * - `item.attributes` — raw values the customer selected (always present, even for "Any...")
+   * - `item.product.node.attributes` — human-readable labels + term names from WordPress
+   *
+   * Falls back to variation-level attributes if `item.attributes` is not available.
+   * No JS string transformations — everything comes from the database.
    */
   function getVariationLabel(item: CartItem): string | null {
+    // 1. Try the actual cart-level attributes first (customer's real selection)
+    const chosenAttributes = item.attributes;
+    if (chosenAttributes && chosenAttributes.length > 0) {
+      const productAttributes = item.product.node.attributes?.nodes || [];
+      return chosenAttributes
+        .map(chosen => {
+          // Find the DB attribute definition by system name (e.g. "pa_size")
+          const dbAttribute = productAttributes.find(
+            a => a.name.toLowerCase() === chosen.name.toLowerCase()
+          );
+          // Human-readable label from DB (e.g. "Rozměry"), fallback to system name
+          const attributeLabel = dbAttribute?.label || chosen.name;
+
+          // Find the human-readable term name by slug (e.g. "l" → "Velké L")
+          const dbTerm = dbAttribute?.terms?.nodes?.find(
+            t => t.slug.toLowerCase() === chosen.value.toLowerCase()
+          );
+          const termName = dbTerm?.name || chosen.value;
+
+          return `${attributeLabel}: ${termName}`;
+        })
+        .join(', ');
+    }
+
+    // 2. Fallback: use variation-level attributes (may miss "Any..." attributes)
     const attrs = item.variation?.node?.attributes?.nodes;
     if (!attrs || attrs.length === 0) return null;
     const validAttrs = attrs.filter(a => a.value && a.value.trim() !== '');
     if (validAttrs.length === 0) return null;
-    const labelMap = buildAttributeLabelMap(item);
+    const productAttributes = item.product.node.attributes?.nodes || [];
     return validAttrs
       .map(a => {
-        const label = labelMap[a.name] || a.label || a.name;
+        const dbAttribute = productAttributes.find(
+          pa => pa.name.toLowerCase() === a.name.toLowerCase()
+        );
+        const label = dbAttribute?.label || a.label || a.name;
         return `${label}: ${a.value}`;
       })
       .join(', ');
@@ -176,7 +192,7 @@
                     >
                       {item.product.node.name}
                     </a>
-                    {#if item.variation?.node?.attributes?.nodes?.length}
+                    {#if getVariationLabel(item)}
                       <span class="item-variation-label">
                         {getVariationLabel(item)}
                       </span>

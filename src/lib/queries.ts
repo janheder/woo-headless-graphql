@@ -209,6 +209,10 @@ export const VARIATION_CART_FRAGMENT = `
         }
       }
     }
+    attributes {
+      name
+      value
+    }
   }
 `;
 
