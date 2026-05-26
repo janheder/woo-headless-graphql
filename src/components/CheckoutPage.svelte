@@ -5,6 +5,7 @@
   import { CHECKOUT, GET_CHECKOUT_DATA, UPDATE_SHIPPING_METHOD } from "../lib/queries";
   import { cleanHtml, formatPrice } from "../lib/utils";
   import type {
+    CartItem,
     CheckoutInput,
     CheckoutResponse,
     GetCheckoutDataResponse,
@@ -168,6 +169,66 @@
     orderNumber = order?.orderNumber || order?.id || "vytvořena";
     orderTotal = formatPrice(order?.total) || checkoutTotal;
     await cart.fetchCart();
+  }
+
+  /**
+   * Build a lookup map from the parent product's attributes.
+   * Maps the raw attribute name (e.g. "pa_size") to an object containing
+   * the human-readable label and the full attribute data (including terms).
+   */
+  function buildAttributeLabelMap(item: CartItem): Record<string, { label: string; terms?: { nodes: { slug: string; name: string }[] } | null }> {
+    const map: Record<string, { label: string; terms?: { nodes: { slug: string; name: string }[] } | null }> = {};
+    const productAttrs = item.product.node.attributes?.nodes;
+    if (productAttrs) {
+      for (const attr of productAttrs) {
+        map[attr.name] = {
+          label: attr.label || attr.name,
+          terms: attr.terms,
+        };
+      }
+    }
+    return map;
+  }
+
+  /**
+   * Get the variation attribute label for display.
+   * Resolves term slugs to their human-readable names.
+   */
+  function getVariationLabel(item: CartItem): string | null {
+    const variationNode = item.variation?.node;
+    const productNode = item.product?.node;
+    const productAttributes = productNode?.attributes?.nodes || [];
+
+    if (!variationNode || !productNode || productAttributes.length === 0) return null;
+
+    const dbVariation = productNode.variations?.nodes?.find(
+      (v: any) => v.databaseId === variationNode.databaseId
+    );
+
+    const targetAttrs = item.variation?.attributes || dbVariation?.attributes?.nodes || variationNode.attributes?.nodes || [];
+    if (targetAttrs.length === 0) return null;
+
+    const labelMap = buildAttributeLabelMap(item);
+
+    return targetAttrs
+      .map(a => {
+        if (!a.value || a.value.trim() === '') return null;
+
+        const attrInfo = labelMap[a.name];
+        const label = attrInfo?.label || a.label || a.name;
+
+        const globalAttr = productAttributes.find(
+          pa => pa.name.toLowerCase() === a.name.toLowerCase()
+        );
+        const dbTerm = globalAttr?.terms?.nodes?.find(
+          (t: any) => t.slug.toLowerCase() === a.value.toLowerCase()
+        );
+        const termName = dbTerm?.name || a.value;
+
+        return `${label}: ${termName}`;
+      })
+      .filter(Boolean)
+      .join(', ');
   }
 
   onMount(() => {
@@ -336,7 +397,12 @@
           <div class="summary-items">
             {#each cart.items as item}
               <div class="summary-item">
-                <span>{item.product.node.name} × {item.quantity}</span>
+                <div class="summary-item-info">
+                  <span>{item.product.node.name} × {item.quantity}</span>
+                  {#if item.variation?.node?.attributes?.nodes?.length}
+                    <span class="item-variation-label">{getVariationLabel(item)}</span>
+                  {/if}
+                </div>
                 <strong>{formatPrice(item.total) || formatPrice(item.product.node.price)}</strong>
               </div>
             {/each}
@@ -554,6 +620,21 @@
 
   .summary-item {
     font-size: 1.4rem;
+    align-items: center;
+  }
+
+  .summary-item-info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .item-variation-label {
+    display: block;
+    font-size: 1.2rem;
+    color: var(--color-text-muted);
+    margin-top: 0.2rem;
+    line-height: 1.4;
   }
 
   .summary-row {

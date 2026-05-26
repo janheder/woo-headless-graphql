@@ -185,6 +185,11 @@ export const PRODUCT_FRAGMENT = `
 export const VARIATION_CART_FRAGMENT = `
   fragment VariationCartFields on CartItem {
     variation {
+      attributes {
+        name
+        value
+        label
+      }
       node {
         id
         databaseId

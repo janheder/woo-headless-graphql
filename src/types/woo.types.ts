@@ -193,6 +193,11 @@ export interface CartItem {
   total?: string | null;
   /** Variation node if this cart item is a product variation */
   variation?: {
+    attributes?: {
+      name: string;
+      value: string;
+      label?: string | null;
+    }[] | null;
     node: ProductVariation;
   } | null;
 }

@@ -42,8 +42,9 @@
       (v: any) => v.databaseId === variationNode.databaseId
     );
 
-    // Use attributes from the found DB variation, fall back to cart-level attributes
-    const targetAttrs = dbVariation?.attributes?.nodes || variationNode.attributes?.nodes || [];
+    // Use attributes from the cart level variation data first (contains actual user choices for Any...),
+    // fall back to db variation attributes, and then to variation node attributes.
+    const targetAttrs = item.variation?.attributes || dbVariation?.attributes?.nodes || variationNode.attributes?.nodes || [];
     if (targetAttrs.length === 0) return null;
 
     // 2. Build the label map from parent product attributes (includes terms for translation)
